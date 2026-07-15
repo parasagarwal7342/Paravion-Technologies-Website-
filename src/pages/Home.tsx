@@ -27,7 +27,7 @@ import { useToast } from '../components/ui/toast';
 import { Switch } from '../components/ui/switch';
 
 // ==========================================
-// 1. THREE.JS 3D CYBER SKY ANIMATION
+// 1. THREE.JS 3D SCROLL-LINKED CYBER SKY
 // ==========================================
 interface ThreeDBackgroundProps {
   mousePos: { x: number; y: number };
@@ -36,11 +36,25 @@ interface ThreeDBackgroundProps {
 const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseRef = useRef(mousePos);
+  
+  // Track scroll position
+  const scrollRef = useRef({ target: 0, current: 0 });
 
-  // Sync mouse position
   useEffect(() => {
     mouseRef.current = mousePos;
   }, [mousePos]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollHeight <= 0) return;
+      scrollRef.current.target = window.scrollY / scrollHeight;
+    };
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // initialize
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -49,9 +63,9 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     let width = container.clientWidth;
     let height = container.clientHeight;
 
-    // 1. Scene, Camera, Renderer
+    // Scene & Camera
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x080c16, 0.015);
+    scene.fog = new THREE.FogExp2(0x080c16, 0.012);
 
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
     camera.position.set(0, 2, 15);
@@ -61,30 +75,29 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // 2. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x00d4aa, 1.2);
-    dirLight.position.set(5, 10, 7);
+    const dirLight = new THREE.DirectionalLight(0x00d4aa, 1.5);
+    dirLight.position.set(5, 12, 10);
     scene.add(dirLight);
 
-    const pointLight = new THREE.PointLight(0x2563eb, 2, 50);
+    const pointLight = new THREE.PointLight(0x2563eb, 2.5, 60);
     pointLight.position.set(0, 0, 5);
     scene.add(pointLight);
 
-    // 3. Cyber Starfield / Nodes
-    const starsCount = 200;
+    // Starfield
+    const starsCount = 250;
     const starsGeom = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starsCount * 3);
     const starColors = new Float32Array(starsCount * 3);
 
     for (let i = 0; i < starsCount; i++) {
-      starPositions[i * 3] = (Math.random() - 0.5) * 80;
-      starPositions[i * 3 + 1] = (Math.random() - 0.5) * 50 + 2;
-      starPositions[i * 3 + 2] = -Math.random() * 60; // fly forward
+      starPositions[i * 3] = (Math.random() - 0.5) * 100;
+      starPositions[i * 3 + 1] = (Math.random() - 0.5) * 60 + 2;
+      starPositions[i * 3 + 2] = -Math.random() * 80;
 
-      // Teal to blue gradient points
       const isTeal = Math.random() > 0.5;
       starColors[i * 3] = isTeal ? 0.0 : 0.14;
       starColors[i * 3 + 1] = isTeal ? 0.83 : 0.38;
@@ -95,7 +108,7 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     starsGeom.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
     const starMat = new THREE.PointsMaterial({
-      size: 0.4,
+      size: 0.35,
       vertexColors: true,
       transparent: true,
       opacity: 0.8
@@ -103,112 +116,255 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     const starField = new THREE.Points(starsGeom, starMat);
     scene.add(starField);
 
-    // 4. Scrolling Digital Grid Plane
-    const gridHelper = new THREE.GridHelper(120, 40, 0x2563eb, 0x131b2e);
-    gridHelper.position.y = -3;
+    // Base Scrolling Grid Plane
+    const gridHelper = new THREE.GridHelper(150, 50, 0x2563eb, 0x131b2e);
+    gridHelper.position.y = -4;
     scene.add(gridHelper);
 
-    // 5. 3D Wireframe Jet Plane
+    // 3D Digital Wireframe Mountains Terrain (Fades in during scroll)
+    const terrainGeom = new THREE.PlaneGeometry(120, 120, 24, 24);
+    const posAttr = terrainGeom.attributes.position;
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i);
+      const y = posAttr.getY(i);
+      // Create wireframe peaks using combined sine waves
+      const z = Math.sin(x * 0.08) * Math.cos(y * 0.08) * 3.5 + Math.sin(x * 0.04) * 2.0;
+      posAttr.setZ(i, z);
+    }
+    terrainGeom.computeVertexNormals();
+    terrainGeom.rotateX(-Math.PI / 2);
+
+    const terrainMat = new THREE.MeshBasicMaterial({
+      color: 0x2563eb,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.0 // invisible at start (0% scroll)
+    });
+    const terrain = new THREE.Mesh(terrainGeom, terrainMat);
+    terrain.position.set(0, -6, -20);
+    scene.add(terrain);
+
+    // 3D Matrix Cube Nodes (Floating clouds of digital data packages)
+    const cubesGroup = new THREE.Group();
+    const cubeGeom = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+    const cubeMat = new THREE.MeshBasicMaterial({
+      color: 0x00d4aa,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.0 // invisible at start
+    });
+
+    const cubeCount = 12;
+    const cubes: THREE.Mesh[] = [];
+    for (let i = 0; i < cubeCount; i++) {
+      const m = new THREE.Mesh(cubeGeom, cubeMat);
+      m.position.set(
+        (Math.random() - 0.5) * 30,
+        (Math.random() - 0.5) * 15 + 3,
+        -Math.random() * 40 - 10
+      );
+      m.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+      cubesGroup.add(m);
+      cubes.push(m);
+    }
+    scene.add(cubesGroup);
+
+    // Giant Security Core Orb (Visible towards final scroll)
+    const coreGeom = new THREE.IcosahedronGeometry(3.0, 1);
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: 0x2563eb,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.0 // invisible at start
+    });
+    const securityCore = new THREE.Mesh(coreGeom, coreMat);
+    securityCore.position.set(0, 1, -10);
+    scene.add(securityCore);
+
+    // 3D Wireframe Jet Plane
     const jetGroup = new THREE.Group();
     const jetMat = new THREE.MeshBasicMaterial({
       color: 0x00d4aa,
       wireframe: true,
       transparent: true,
-      opacity: 0.7
+      opacity: 0.8
     });
 
     // Fuselage
-    const fuselageGeom = new THREE.CylinderGeometry(0.1, 0.8, 8, 5);
+    const fuselageGeom = new THREE.CylinderGeometry(0.1, 0.7, 7, 5);
     fuselageGeom.rotateX(Math.PI / 2);
     const fuselage = new THREE.Mesh(fuselageGeom, jetMat);
     jetGroup.add(fuselage);
 
     // Nose
-    const noseGeom = new THREE.ConeGeometry(0.8, 2.5, 5);
+    const noseGeom = new THREE.ConeGeometry(0.7, 2.2, 5);
     noseGeom.rotateX(Math.PI / 2);
     const nose = new THREE.Mesh(noseGeom, jetMat);
-    nose.position.z = 5.25;
+    nose.position.z = 4.6;
     jetGroup.add(nose);
 
     // Left Wing
-    const wingLeftGeom = new THREE.ConeGeometry(2.5, 5, 3);
+    const wingLeftGeom = new THREE.ConeGeometry(2.2, 4.5, 3);
     wingLeftGeom.rotateZ(Math.PI / 2);
     wingLeftGeom.scale(1, 0.05, 1);
     const wingLeft = new THREE.Mesh(wingLeftGeom, jetMat);
-    wingLeft.position.set(-2, 0, -0.5);
+    wingLeft.position.set(-1.8, 0, -0.5);
     jetGroup.add(wingLeft);
 
     // Right Wing
-    const wingRightGeom = new THREE.ConeGeometry(2.5, 5, 3);
+    const wingRightGeom = new THREE.ConeGeometry(2.2, 4.5, 3);
     wingRightGeom.rotateZ(-Math.PI / 2);
     wingRightGeom.scale(1, 0.05, 1);
     const wingRight = new THREE.Mesh(wingRightGeom, jetMat);
     wingRight.position.set(2, 0, -0.5);
     jetGroup.add(wingRight);
 
-    // Vertical Fin (tail)
-    const finGeom = new THREE.ConeGeometry(0.6, 1.5, 3);
+    // Tail Fin
+    const finGeom = new THREE.ConeGeometry(0.5, 1.2, 3);
     finGeom.rotateX(-Math.PI / 4);
     finGeom.scale(0.05, 1, 1);
     const fin = new THREE.Mesh(finGeom, jetMat);
-    fin.position.set(0, 0.8, -3.5);
+    fin.position.set(0, 0.7, -3.0);
     jetGroup.add(fin);
 
     scene.add(jetGroup);
-
-    // Position plane in front of camera
     jetGroup.position.set(0, 0, 5);
 
-    // 6. Animation Loop
+    // Animation variables
     let clock = new THREE.Clock();
     let animId: number;
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
       const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
 
-      // Scroll grid to simulate forward flight
-      gridHelper.position.z += delta * 12;
-      if (gridHelper.position.z > 6) {
-        gridHelper.position.z = 0;
-      }
+      // Smoothly interpolate scroll ratio (dynamic lerp)
+      scrollRef.current.current = THREE.MathUtils.lerp(
+        scrollRef.current.current,
+        scrollRef.current.target,
+        0.05 // inertia response speed
+      );
+      const sr = scrollRef.current.current;
 
-      // Fly stars closer
+      // ==========================================
+      // SCROLL-LINKED NARRATIVE STATES
+      // ==========================================
+      
+      // 1. Grid speed accelerates with scroll depth
+      const scrollSpeedMultiplier = 1.0 + sr * 4.0;
+      gridHelper.position.z += delta * 12 * scrollSpeedMultiplier;
+      if (gridHelper.position.z > 6) gridHelper.position.z = 0;
+
+      // 2. Stars move faster and warp
       const positions = starsGeom.attributes.position.array as Float32Array;
       for (let i = 0; i < starsCount; i++) {
-        positions[i * 3 + 2] += delta * 18;
+        positions[i * 3 + 2] += delta * 16 * scrollSpeedMultiplier;
         if (positions[i * 3 + 2] > 10) {
-          positions[i * 3 + 2] = -60;
-          positions[i * 3] = (Math.random() - 0.5) * 80;
-          positions[i * 3 + 1] = (Math.random() - 0.5) * 50 + 2;
+          positions[i * 3 + 2] = -70;
+          positions[i * 3] = (Math.random() - 0.5) * 100;
+          positions[i * 3 + 1] = (Math.random() - 0.5) * 60 + 2;
         }
       }
       starsGeom.attributes.position.needsUpdate = true;
 
-      // Make jet hover subtly
-      const elapsed = clock.getElapsedTime();
-      jetGroup.position.y = Math.sin(elapsed * 2.5) * 0.15;
+      // 3. Wireframe Jet Flight Paths (0.0 to 0.4 Scroll)
+      if (sr < 0.4) {
+        jetGroup.visible = true;
+        
+        // Plane speeds forward (zooms out of window view)
+        const planeZ = 5 - (sr / 0.4) * 35;
+        jetGroup.position.z = THREE.MathUtils.lerp(jetGroup.position.z, planeZ, 0.1);
+        
+        // Plane banks to the side and pitches
+        const planeRoll = -sr * Math.PI * 1.2;
+        const planePitch = sr * Math.PI * 0.2;
+        jetGroup.rotation.z = THREE.MathUtils.lerp(jetGroup.rotation.z, planeRoll, 0.1);
+        jetGroup.rotation.x = THREE.MathUtils.lerp(jetGroup.rotation.x, planePitch, 0.1);
+        
+        // Jet hovers subtly
+        jetGroup.position.y = Math.sin(elapsed * 2.5) * 0.15;
+        jetGroup.position.x = Math.cos(elapsed * 1.5) * 0.1;
+      } else {
+        // Plane has flown away
+        jetGroup.visible = false;
+      }
 
-      // Parallax Tilt based on Mouse input
-      const targetRX = mouseRef.current.y * 0.25;
-      const targetRY = -mouseRef.current.x * 0.35;
-      const targetRZ = -mouseRef.current.x * 0.15; // bank roll
+      // 4. Digital Mountains Terrain (0.2 to 0.6 Scroll)
+      if (sr >= 0.15 && sr <= 0.65) {
+        terrain.visible = true;
+        // Fade opacity in and out
+        let opacity = 0;
+        if (sr < 0.35) {
+          opacity = (sr - 0.15) / 0.2; // fade in
+        } else {
+          opacity = 1.0 - (sr - 0.35) / 0.3; // fade out
+        }
+        terrainMat.opacity = opacity * 0.22;
+        
+        // Scroll terrain
+        terrain.position.z += delta * 15;
+        if (terrain.position.z > 20) terrain.position.z = -40;
+      } else {
+        terrain.visible = false;
+      }
 
-      jetGroup.rotation.x = THREE.MathUtils.lerp(jetGroup.rotation.x, targetRX, 0.08);
-      jetGroup.rotation.y = THREE.MathUtils.lerp(jetGroup.rotation.y, targetRY, 0.08);
-      jetGroup.rotation.z = THREE.MathUtils.lerp(jetGroup.rotation.z, targetRZ, 0.08);
+      // 5. Matrix Nodes (0.5 to 0.8 Scroll)
+      if (sr >= 0.45 && sr <= 0.85) {
+        cubesGroup.visible = true;
+        let opacity = 0;
+        if (sr < 0.65) {
+          opacity = (sr - 0.45) / 0.2;
+        } else {
+          opacity = 1.0 - (sr - 0.65) / 0.2;
+        }
+        cubeMat.opacity = opacity * 0.5;
 
-      // Tilts camera slightly
-      camera.position.x = THREE.MathUtils.lerp(camera.position.x, mouseRef.current.x * 1.5, 0.05);
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, 2 + mouseRef.current.y * 1.0, 0.05);
-      camera.lookAt(0, 0.5, 0);
+        // Rotate and scroll floating cubes
+        cubes.forEach((cube, idx) => {
+          cube.rotation.x += delta * 0.8 * (idx % 2 === 0 ? 1 : -1);
+          cube.rotation.y += delta * 0.5;
+          cube.position.z += delta * 10;
+          if (cube.position.z > 10) {
+            cube.position.z = -50;
+            cube.position.x = (Math.random() - 0.5) * 30;
+          }
+        });
+      } else {
+        cubesGroup.visible = false;
+      }
+
+      // 6. Security Core Orb (0.75 to 1.0 Scroll)
+      if (sr >= 0.70) {
+        securityCore.visible = true;
+        const opacity = (sr - 0.70) / 0.25;
+        coreMat.opacity = Math.min(opacity * 0.4, 0.4);
+
+        // Spin and scale security core
+        securityCore.rotation.y += delta * 0.4;
+        securityCore.rotation.x += delta * 0.2;
+        
+        const coreScale = 1.0 + Math.sin(elapsed * 2.0) * 0.05 + (sr - 0.7) * 0.5;
+        securityCore.scale.set(coreScale, coreScale, coreScale);
+      } else {
+        securityCore.visible = false;
+      }
+
+      // 7. Mouse Parallax Tilt
+      const targetCamX = mouseRef.current.x * 2.0;
+      const targetCamY = 2 + mouseRef.current.y * 1.5 - sr * 4.0; // cameras sinks as we scroll
+      const targetCamZ = 15 - sr * 6.0; // camera zooms closer
+
+      camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
+      camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.05);
+      camera.lookAt(0, 0, 0);
 
       renderer.render(scene, camera);
     };
 
     animate();
 
-    // 7. Resize handler
     const handleResize = () => {
       if (!containerRef.current) return;
       width = containerRef.current.clientWidth;
@@ -233,7 +389,7 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
 };
 
 // ==========================================
-// 2. STATS BAR: ROTATING NODAL GLOBE (Three.js)
+// 2. STATS BAR: ROTATING NODAL GLOBE
 // ==========================================
 const StatGlobe3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -256,7 +412,6 @@ const StatGlobe3D: React.FC = () => {
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    // Wireframe Globe
     const globeGeom = new THREE.SphereGeometry(1.6, 12, 12);
     const globeMat = new THREE.MeshBasicMaterial({
       color: 0x00d4aa,
@@ -267,7 +422,6 @@ const StatGlobe3D: React.FC = () => {
     const globe = new THREE.Mesh(globeGeom, globeMat);
     scene.add(globe);
 
-    // Glowing Nodes
     const pointsMat = new THREE.PointsMaterial({
       color: 0xffffff,
       size: 0.12,
@@ -277,7 +431,6 @@ const StatGlobe3D: React.FC = () => {
     const points = new THREE.Points(globeGeom, pointsMat);
     scene.add(points);
 
-    // Secondary Orbit Ring
     const ringGeom = new THREE.RingGeometry(2.0, 2.05, 24);
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0x2563eb,
@@ -315,7 +468,131 @@ const StatGlobe3D: React.FC = () => {
 };
 
 // ==========================================
-// 2.5 STATS BAR ANIMATED COUNTER
+// 3. HEALTH CHECK: PULSING SECURITY CORE SHIELD
+// ==========================================
+interface SecurityShield3DProps {
+  yesCount: number;
+}
+
+const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const coreRef = useRef<THREE.Mesh | null>(null);
+  const ringRef = useRef<THREE.Mesh | null>(null);
+
+  useEffect(() => {
+    if (!coreRef.current || !ringRef.current) return;
+    
+    let colorHex = 0xef4444; 
+    if (yesCount >= 4) {
+      colorHex = 0x00d4aa; 
+    } else if (yesCount >= 2) {
+      colorHex = 0xf5a623; 
+    }
+
+    const material = coreRef.current.material as THREE.MeshBasicMaterial;
+    material.color.setHex(colorHex);
+
+    const ringMat = ringRef.current.material as THREE.MeshBasicMaterial;
+    ringMat.color.setHex(colorHex);
+  }, [yesCount]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    const coreGeom = new THREE.IcosahedronGeometry(1.5, 1);
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: 0xef4444,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.6
+    });
+    const core = new THREE.Mesh(coreGeom, coreMat);
+    scene.add(core);
+    coreRef.current = core;
+
+    const pointsMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.1,
+      transparent: true,
+      opacity: 0.8
+    });
+    const points = new THREE.Points(coreGeom, pointsMat);
+    scene.add(points);
+
+    const ringGeom = new THREE.TorusGeometry(2.1, 0.03, 8, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xef4444,
+      transparent: true,
+      opacity: 0.4
+    });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.rotation.x = Math.PI / 4;
+    scene.add(ring);
+    ringRef.current = ring;
+
+    let animId: number;
+    let clock = new THREE.Clock();
+
+    const animate = () => {
+      animId = requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      let speedFactor = 2.5; 
+      if (yesCount >= 4) speedFactor = 0.6; 
+      else if (yesCount >= 2) speedFactor = 1.4; 
+
+      core.rotation.y += 0.005 * speedFactor;
+      core.rotation.x += 0.003 * speedFactor;
+      points.rotation.copy(core.rotation);
+      ring.rotation.z -= 0.003 * speedFactor;
+
+      const pulse = 1.0 + Math.sin(elapsed * (speedFactor * 2)) * 0.08;
+      core.scale.set(pulse, pulse, pulse);
+      points.scale.set(pulse, pulse, pulse);
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const w = containerRef.current.clientWidth;
+      const h = containerRef.current.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animId);
+      if (container && renderer.domElement) {
+        container.removeChild(renderer.domElement);
+      }
+      scene.clear();
+    };
+  }, []);
+
+  return <div ref={containerRef} className="w-full h-64 flex items-center justify-center" />;
+};
+
+// ==========================================
+// 3.5 STATS BAR ANIMATED COUNTER
 // ==========================================
 interface CounterProps {
   value: number;
@@ -361,136 +638,6 @@ const AnimatedCounter: React.FC<CounterProps> = ({ value, prefix = '', suffix = 
       {suffix}
     </span>
   );
-};
-
-// ==========================================
-// 3. HEALTH CHECK: PULSING SECURITY CORE SHIELD (Three.js)
-// ==========================================
-interface SecurityShield3DProps {
-  yesCount: number;
-}
-
-const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const coreRef = useRef<THREE.Mesh | null>(null);
-  const ringRef = useRef<THREE.Mesh | null>(null);
-
-  // Dynamically update colors & pulse based on security level
-  useEffect(() => {
-    if (!coreRef.current || !ringRef.current) return;
-    
-    let colorHex = 0xef4444; // high risk (0-1)
-    if (yesCount >= 4) {
-      colorHex = 0x00d4aa; // low risk
-    } else if (yesCount >= 2) {
-      colorHex = 0xf5a623; // medium risk
-    }
-
-    const material = coreRef.current.material as THREE.MeshBasicMaterial;
-    material.color.setHex(colorHex);
-
-    const ringMat = ringRef.current.material as THREE.MeshBasicMaterial;
-    ringMat.color.setHex(colorHex);
-  }, [yesCount]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.z = 5;
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
-
-    // Security Core Shape (Wireframe Icosahedron representing system core)
-    const coreGeom = new THREE.IcosahedronGeometry(1.5, 1);
-    const coreMat = new THREE.MeshBasicMaterial({
-      color: 0xef4444,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.6
-    });
-    const core = new THREE.Mesh(coreGeom, coreMat);
-    scene.add(core);
-    coreRef.current = core;
-
-    // Glowing vertices
-    const pointsMat = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 0.1,
-      transparent: true,
-      opacity: 0.8
-    });
-    const points = new THREE.Points(coreGeom, pointsMat);
-    scene.add(points);
-
-    // Orbit shielding ring
-    const ringGeom = new THREE.TorusGeometry(2.1, 0.03, 8, 32);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xef4444,
-      transparent: true,
-      opacity: 0.4
-    });
-    const ring = new THREE.Mesh(ringGeom, ringMat);
-    ring.rotation.x = Math.PI / 4;
-    scene.add(ring);
-    ringRef.current = ring;
-
-    let animId: number;
-    let clock = new THREE.Clock();
-
-    const animate = () => {
-      animId = requestAnimationFrame(animate);
-      const elapsed = clock.getElapsedTime();
-
-      // Dynamic rotation speed based on posture risk
-      let speedFactor = 2.5; // High risk (fast rotation)
-      if (yesCount >= 4) speedFactor = 0.6; // Low risk (slow rotation)
-      else if (yesCount >= 2) speedFactor = 1.4; // Medium risk
-
-      core.rotation.y += 0.005 * speedFactor;
-      core.rotation.x += 0.003 * speedFactor;
-      points.rotation.copy(core.rotation);
-      ring.rotation.z -= 0.003 * speedFactor;
-
-      // Pulse scaling
-      const pulse = 1.0 + Math.sin(elapsed * (speedFactor * 2)) * 0.08;
-      core.scale.set(pulse, pulse, pulse);
-      points.scale.set(pulse, pulse, pulse);
-
-      renderer.render(scene, camera);
-    };
-
-    animate();
-
-    const handleResize = () => {
-      if (!containerRef.current) return;
-      const w = containerRef.current.clientWidth;
-      const h = containerRef.current.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animId);
-      if (container && renderer.domElement) {
-        container.removeChild(renderer.domElement);
-      }
-      scene.clear();
-    };
-  }, []);
-
-  return <div ref={containerRef} className="w-full h-64 flex items-center justify-center" />;
 };
 
 // ==========================================
@@ -635,7 +782,52 @@ const contactSchema = z.object({
 type ContactFormInputs = z.infer<typeof contactSchema>;
 
 // ==========================================
-// 6. MAIN HOME PAGE COMPONENT
+// 6. ANIMATION MOTION VARIANTS FOR SCROLL RHYTHM
+// ==========================================
+const revealHeaderVariants = {
+  hidden: { opacity: 0, y: 35, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } 
+  }
+};
+
+const cardLeftVariants = {
+  hidden: { opacity: 0, x: -60 },
+  visible: { 
+    opacity: 1, 
+    x: 0, 
+    transition: { type: "spring" as const, stiffness: 45, damping: 14 } 
+  }
+};
+
+const cardRightVariants = {
+  hidden: { opacity: 0, x: 60 },
+  visible: { 
+    opacity: 1, 
+    x: 0, 
+    transition: { type: "spring" as const, stiffness: 45, damping: 14 } 
+  }
+};
+
+const cardFadeUpVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: (idx: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { 
+      type: "spring" as const, 
+      stiffness: 45, 
+      damping: 14,
+      delay: idx * 0.1 
+    }
+  })
+};
+
+// ==========================================
+// 7. MAIN HOME PAGE COMPONENT
 // ==========================================
 export default function Home() {
   const { toast } = useToast();
@@ -761,7 +953,7 @@ export default function Home() {
               </defs>
               <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#hexGrad)" />
               <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#080C16" />
-              <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#hexGrad)" className="animate-pulse" />
+              <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#hexGrad)" />
             </svg>
             <span className="text-white font-extrabold tracking-[0.2em] font-sans text-lg md:text-xl">
               PARAVION <span className="text-teal font-light">TECHNOLOGIES</span>
@@ -778,7 +970,7 @@ export default function Home() {
 
           <div className="hidden md:flex items-center gap-4">
             {visitorCount !== null && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-xs text-teal font-mono">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-xs text-teal font-mono animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal animate-ping" />
                 Network Visits: {visitorCount}
               </div>
@@ -834,30 +1026,21 @@ export default function Home() {
       </nav>
 
       {/* ==========================================
-          6.2 HERO (Immersive Airplane Window Background)
+          6.2 HERO (Immersive Passenger Window)
           ========================================== */}
       <section id="home" className="relative min-h-screen w-full flex items-center pt-20 overflow-hidden">
         
-        {/* Full-Screen Passenger Window Frame Mask (mimics user reference image) */}
+        {/* Full-Screen Passenger Window Frame Mask */}
         <div className="absolute inset-0 z-0 bg-[#080C16] flex items-center justify-center pointer-events-none p-4 md:p-10 select-none">
-          {/* Cabin Wall Shadow Background */}
           <div className="absolute inset-0 bg-[#0f1524] opacity-95" />
           
-          {/* Airplane Window Cutout */}
           <div className="absolute inset-[3%] md:inset-[6%_12%] rounded-[40px] md:rounded-[80px_80px_80px_80px_/_120px_120px_120px_120px] airplane-window-bezel pointer-events-auto overflow-hidden">
-            
-            {/* Direct WebGL Interactive Scene */}
             <ThreeDBackground mousePos={mousePos} />
-            
-            {/* Dynamic CSS Glass glare reflections */}
             <div className="absolute inset-0 airplane-glass-shimmer mix-blend-screen opacity-70 z-10" />
-            
-            {/* Beveled Passenger Window Shadow overlay for physical 3D depth */}
             <div className="absolute inset-0 airplane-window-inner-shadow z-10" />
           </div>
         </div>
 
-        {/* Hero floating contents in front of the window */}
         <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center py-16">
           <div className="lg:col-span-8 flex flex-col items-start text-left bg-[#080C16]/50 backdrop-blur-sm p-8 rounded-2xl border border-white/5 shadow-2xl">
             <motion.div
@@ -897,14 +1080,14 @@ export default function Home() {
               <button
                 data-testid="btn-hero-products"
                 onClick={() => handleNavClick('products')}
-                className="px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg hover:shadow-blue-500/20 hover:scale-[1.03] text-center"
+                className="px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg hover:shadow-blue-500/20 hover:scale-[1.03] text-center cursor-pointer"
               >
                 View Our Products
               </button>
               <button
                 data-testid="btn-hero-contact"
                 onClick={() => handleNavClick('contact')}
-                className="px-8 py-4 rounded-xl border border-gold text-gold font-bold hover:bg-gold/5 transition-all hover:scale-[1.03] text-center"
+                className="px-8 py-4 rounded-xl border border-gold text-gold font-bold hover:bg-gold/5 transition-all hover:scale-[1.03] text-center cursor-pointer"
               >
                 Secure Your Business
               </button>
@@ -919,37 +1102,31 @@ export default function Home() {
       <section className="relative bg-[#0F1626] border-y border-white/5 py-12 z-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-center items-center">
-            {/* Stat 1 with Globe */}
             <div className="flex flex-col gap-1 items-center">
               <StatGlobe3D />
               <AnimatedCounter value={14.4} suffix="M+" decimals={1} />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Nodal Points Secured</span>
             </div>
-            {/* Stat 2 */}
             <div className="flex flex-col gap-1 items-center">
               <div className="h-20 w-20 flex items-center justify-center text-teal font-mono text-xl border border-teal/15 bg-teal/5 rounded-full mb-2">14ms</div>
               <AnimatedCounter value={14} suffix="ms" />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">UBS Engine Latency</span>
             </div>
-            {/* Stat 3 */}
             <div className="flex flex-col gap-1 items-center">
               <div className="h-20 w-20 flex items-center justify-center text-blue-500 font-mono text-xl border border-blue-500/15 bg-blue-500/5 rounded-full mb-2">₹40B</div>
               <AnimatedCounter value={40} prefix="INR " suffix="B+" />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Fraud Prevented</span>
             </div>
-            {/* Stat 4 */}
             <div className="flex flex-col gap-1 items-center">
               <div className="h-20 w-20 flex items-center justify-center text-gold font-mono text-xl border border-gold/15 bg-gold/5 rounded-full mb-2">PAT</div>
               <AnimatedCounter value={8} />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Core Patents Pending</span>
             </div>
-            {/* Stat 5 */}
             <div className="flex flex-col gap-1 items-center">
               <div className="h-20 w-20 flex items-center justify-center text-white/50 font-mono text-xl border border-white/5 bg-white/5 rounded-full mb-2">2026</div>
               <AnimatedCounter value={5} />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Products Built in 2026</span>
             </div>
-            {/* Stat 6 */}
             <div className="flex flex-col gap-1 items-center">
               <div className="h-20 w-20 flex items-center justify-center text-green-400 font-mono text-xl border border-green-500/15 bg-green-500/5 rounded-full mb-2">LIVE</div>
               <AnimatedCounter value={1} />
@@ -960,10 +1137,16 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.4 PRODUCTS SECTION (Filterable Grid)
+          6.4 PRODUCTS SECTION (Scroll Stagger Spring)
           ========================================== */}
       <section id="products" className="py-24 max-w-7xl mx-auto px-6 z-20 relative">
-        <div className="flex flex-col items-center text-center mb-16">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: false, margin: "-100px" }}
+          variants={revealHeaderVariants}
+          className="flex flex-col items-center text-center mb-16"
+        >
           <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Our Products</h2>
           <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">What We've Built</h3>
           <p className="text-gray-400 max-w-2xl leading-relaxed">
@@ -971,46 +1154,32 @@ export default function Home() {
           </p>
 
           <div className="flex bg-[#0F1626] border border-white/5 p-1 rounded-full mt-10">
-            <button
-              data-testid="filter-all"
-              onClick={() => setFilter('All')}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-                filter === 'All' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              All
-            </button>
-            <button
-              data-testid="filter-deployed"
-              onClick={() => setFilter('Deployed')}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-                filter === 'Deployed' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              Deployed
-            </button>
-            <button
-              data-testid="filter-prototype"
-              onClick={() => setFilter('Prototype')}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-                filter === 'Prototype' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              Prototype
-            </button>
+            {['All', 'Deployed', 'Prototype'].map((t) => (
+              <button
+                key={t}
+                data-testid={`filter-${t.toLowerCase()}`}
+                onClick={() => setFilter(t as any)}
+                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+                  filter === t ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
           </div>
-        </div>
+        </motion.div>
 
         <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <AnimatePresence mode="popLayout">
-            {filteredProducts.map((p) => (
+            {filteredProducts.map((p, idx) => (
               <motion.div
                 key={p.id}
                 layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial="hidden"
+                whileInView="visible"
                 exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.4 }}
+                viewport={{ once: false, margin: "-80px" }}
+                variants={idx % 2 === 0 ? cardLeftVariants : cardRightVariants}
                 data-testid={`card-product-${p.id}`}
                 className="group relative flex flex-col justify-between p-8 rounded-2xl border border-white/5 bg-[#0F1626]/80 hover:border-teal/30 hover:glow-teal transition-all duration-300"
               >
@@ -1040,8 +1209,8 @@ export default function Home() {
                   <p className="text-sm text-gray-300 mb-6 leading-relaxed font-sans">{p.description}</p>
 
                   <div className="mb-6 flex flex-col gap-2.5">
-                    {p.achievements.map((ach, idx) => (
-                      <div key={idx} className="flex gap-2 text-sm leading-relaxed">
+                    {p.achievements.map((ach, id) => (
+                      <div key={id} className="flex gap-2 text-sm leading-relaxed">
                         <span className="text-teal font-mono">▷</span>
                         <span className="text-gray-300 font-sans">{ach}</span>
                       </div>
@@ -1051,9 +1220,9 @@ export default function Home() {
 
                 <div>
                   <div className="flex flex-wrap gap-2 mb-6">
-                    {p.tech.map((t, idx) => (
+                    {p.tech.map((t, id) => (
                       <span
-                        key={idx}
+                        key={id}
                         className="px-2.5 py-1 rounded-md border border-white/5 bg-white/5 text-[11px] font-mono text-gray-400"
                       >
                         {t}
@@ -1102,123 +1271,74 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.5 DIGITAL SERVICES (Grid showcase)
+          6.5 DIGITAL SERVICES (Stagger Upwards Scroll)
           ========================================== */}
       <section id="services" className="bg-[#05080f] py-24 border-t border-white/5 relative z-20">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col items-center text-center mb-16">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, margin: "-100px" }}
+            variants={revealHeaderVariants}
+            className="flex flex-col items-center text-center mb-16"
+          >
             <h2 className="text-xs font-mono text-teal tracking-[0.25em] uppercase mb-4">Enterprise Capabilities</h2>
             <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">Digital Services</h3>
             <p className="text-gray-400 max-w-2xl leading-relaxed">
               We design, build, and deploy digital systems with a security-first posture, ensuring stability and performance at scale.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <motion.div
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              className="group p-8 rounded-2xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/40 transition-all duration-300"
-            >
-              <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
-                <Globe className="w-6 h-6" />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-3">Website & Web App Development</h4>
-              <p className="text-sm text-gray-400 leading-relaxed font-sans">
-                Highly responsive, state-of-the-art Single Page and Multi Page web applications built with React, Next.js, and lightweight fast backends.
-              </p>
-            </motion.div>
-
-            <motion.div
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="group p-8 rounded-2xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/40 transition-all duration-300"
-            >
-              <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
-                <Smartphone className="w-6 h-6" />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-3">Mobile App Development</h4>
-              <p className="text-sm text-gray-400 leading-relaxed font-sans">
-                Native and hybrid mobile application designs delivering flawless user experiences on iOS and Android with optimized secure transactions.
-              </p>
-            </motion.div>
-
-            <motion.div
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="group p-8 rounded-2xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/40 transition-all duration-300"
-            >
-              <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
-                <Server className="w-6 h-6" />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-3">Domain & Hosting Solutions</h4>
-              <p className="text-sm text-gray-400 leading-relaxed font-sans">
-                Reliable host configurations, SSL protection protocols, content delivery networks (CDNs), and high-availability server administration.
-              </p>
-            </motion.div>
-
-            <motion.div
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              className="group p-8 rounded-2xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/40 transition-all duration-300"
-            >
-              <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
-                <Megaphone className="w-6 h-6" />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-3">Digital Marketing & SEO</h4>
-              <p className="text-sm text-gray-400 leading-relaxed font-sans">
-                Data-driven SEO strategies, keyword optimization, analytics, and targeted marketing campaigns to maximize digital expansion.
-              </p>
-            </motion.div>
-
-            <motion.div
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="group p-8 rounded-2xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/40 transition-all duration-300"
-            >
-              <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
-                <Paintbrush className="w-6 h-6" />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-3">UI/UX Design</h4>
-              <p className="text-sm text-gray-400 leading-relaxed font-sans">
-                Premium, technical, and intuitive user interfaces that enhance branding, streamline interactions, and maximize user conversion.
-              </p>
-            </motion.div>
-
-            <motion.div
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="group p-8 rounded-2xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/40 transition-all duration-300"
-            >
-              <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
-                <Cloud className="w-6 h-6" />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-3">Cloud Infrastructure</h4>
-              <p className="text-sm text-gray-400 leading-relaxed font-sans">
-                Automated dev pipelines, high-density secure container deployments, microservices orchestration, and zero-downtime infrastructure.
-              </p>
-            </motion.div>
+            {[
+              { title: "Website & Web App Development", icon: Globe, desc: "Highly responsive, state-of-the-art Single Page and Multi Page web applications built with React, Next.js, and lightweight fast backends." },
+              { title: "Mobile App Development", icon: Smartphone, desc: "Native and hybrid mobile application designs delivering flawless user experiences on iOS and Android with optimized secure transactions." },
+              { title: "Domain & Hosting Solutions", icon: Server, desc: "Reliable host configurations, SSL protection protocols, content delivery networks (CDNs), and high-availability server administration." },
+              { title: "Digital Marketing & SEO", icon: Megaphone, desc: "Data-driven SEO strategies, keyword optimization, analytics, and targeted marketing campaigns to maximize digital expansion." },
+              { title: "UI/UX Design", icon: Paintbrush, desc: "Premium, technical, and intuitive user interfaces that enhance branding, streamline interactions, and maximize user conversion." },
+              { title: "Cloud Infrastructure", icon: Cloud, desc: "Automated dev pipelines, high-density secure container deployments, microservices orchestration, and zero-downtime infrastructure." }
+            ].map((srv, idx) => (
+              <motion.div
+                key={srv.title}
+                custom={idx}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: false, margin: "-60px" }}
+                variants={cardFadeUpVariants}
+                className="group p-8 rounded-2xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/45 transition-all duration-300"
+              >
+                <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
+                  <srv.icon className="w-6 h-6" />
+                </div>
+                <h4 className="text-xl font-bold text-white mb-3">{srv.title}</h4>
+                <p className="text-sm text-gray-400 leading-relaxed font-sans">{srv.desc}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          6.6 TECHNOLOGY STACK (Centered flexing grid)
+          6.6 TECHNOLOGY STACK
           ========================================== */}
       <section id="stack" className="relative bg-[#0F1626]/50 border-y border-white/5 py-16 z-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-10">Advanced System Toolkit</h2>
-          <div className="flex flex-wrap items-center justify-center gap-3.5 max-w-4xl mx-auto">
+          <motion.h2 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, margin: "-100px" }}
+            variants={revealHeaderVariants}
+            className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-10"
+          >
+            Advanced System Toolkit
+          </motion.h2>
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, margin: "-60px" }}
+            variants={revealHeaderVariants}
+            className="flex flex-wrap items-center justify-center gap-3.5 max-w-4xl mx-auto"
+          >
             {[
               'React', 'Next.js', 'Node.js', 'Python', 'TypeScript', 'TensorFlow', 'OpenCV',
               'Polygon Blockchain', 'Razorpay', 'Anthropic Claude', 'XGBoost', 'Flask',
@@ -1231,17 +1351,21 @@ export default function Home() {
                 {tech}
               </span>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ==========================================
-          6.7 SECURITY HEALTH CHECK (Interactive widget + 3D Shield)
+          6.7 SECURITY HEALTH CHECK (Dynamic Shield)
           ========================================== */}
       <section id="assessment" className="py-24 max-w-6xl mx-auto px-6 z-20 relative">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-[#0F1626]/80 backdrop-blur-md rounded-2xl border border-white/5 p-8 md:p-12 shadow-2xl glow-blue items-center">
-          
-          {/* Question fields */}
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: false, margin: "-100px" }}
+          variants={revealHeaderVariants}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-[#0F1626]/80 backdrop-blur-md rounded-2xl border border-white/5 p-8 md:p-12 shadow-2xl glow-blue items-center"
+        >
           <div className="lg:col-span-7">
             <div className="mb-8">
               <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-2">Instant Evaluation</h2>
@@ -1265,10 +1389,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 3D Shield Pulse and calculate readout */}
           <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 border border-white/5 bg-[#080C16]/60 rounded-xl text-center">
-            
-            {/* Glowing 3D WebGL Shield component */}
             <SecurityShield3D yesCount={yesCount} />
             
             <div className="flex flex-col items-center gap-1 mt-4">
@@ -1283,21 +1404,27 @@ export default function Home() {
             <button
               data-testid="btn-assessment-cta"
               onClick={() => handleNavClick('contact')}
-              className="w-full py-3 rounded-lg bg-gold hover:bg-gold/90 text-background font-bold text-xs tracking-wider transition-all shadow-md inline-flex items-center justify-center gap-2 hover:scale-[1.02]"
+              className="w-full py-3 rounded-lg bg-gold hover:bg-gold/90 text-background font-bold text-xs tracking-wider transition-all shadow-md inline-flex items-center justify-center gap-2 hover:scale-[1.02] cursor-pointer"
             >
               Talk to a Security Expert
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* ==========================================
-          6.8 ABOUT / VISION (Sovereign-First)
+          6.8 ABOUT / VISION
           ========================================== */}
       <section id="about" className="bg-[#05080f] py-24 border-t border-white/5 relative z-20">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          <div className="lg:col-span-7 flex flex-col items-start">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, margin: "-100px" }}
+            variants={cardLeftVariants}
+            className="lg:col-span-7 flex flex-col items-start"
+          >
             <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Startup Vision</h2>
             <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">Sovereign-First Digital Architecture</h3>
             <p className="text-gray-300 mb-6 leading-relaxed font-sans">
@@ -1306,54 +1433,48 @@ export default function Home() {
             <p className="text-gray-400 text-sm leading-relaxed font-sans mb-8">
               Based in India, our mandate is to engineer credible, technical systems using modern toolchains. By infusing zero-trust verification rules at core system interfaces, we establish robust platforms capable of scaling while retaining absolute data privacy.
             </p>
-          </div>
+          </motion.div>
 
           <div className="lg:col-span-5 flex flex-col gap-6 w-full">
-            <div className="flex gap-5 p-6 rounded-xl border border-white/5 bg-[#0F1626]/40 hover:border-blue-500/30 transition-all">
-              <div className="text-blue-400 mt-0.5">
-                <BrainCircuit className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-white mb-1.5">AI-First Automation</h4>
-                <p className="text-xs text-gray-400 leading-relaxed font-sans">
-                  Deep integration of Large Language Models (LLMs) and neural classifiers mapped directly to client environments.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-5 p-6 rounded-xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/30 transition-all">
-              <div className="text-teal mt-0.5">
-                <Shield className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-white mb-1.5">Zero-Trust Protocol</h4>
-                <p className="text-xs text-gray-400 leading-relaxed font-sans">
-                  Systemic validation at every logical boundary, eliminating vulnerable assumptions in transaction processing pipelines.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-5 p-6 rounded-xl border border-white/5 bg-[#0F1626]/40 hover:border-gold/30 transition-all">
-              <div className="text-gold mt-0.5">
-                <LinkIcon className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-white mb-1.5">Blockchain-Anchored Logs</h4>
-                <p className="text-xs text-gray-400 leading-relaxed font-sans">
-                  Cryptographic ledger hashes establishing immutable, verifiable histories of transactional and server actions.
-                </p>
-              </div>
-            </div>
+            {[
+              { icon: BrainCircuit, color: "text-blue-400", border: "hover:border-blue-500/30", title: "AI-First Automation", desc: "Deep integration of Large Language Models (LLMs) and neural classifiers mapped directly to client environments." },
+              { icon: Shield, color: "text-teal", border: "hover:border-teal/30", title: "Zero-Trust Protocol", desc: "Systemic validation at every logical boundary, eliminating vulnerable assumptions in transaction processing pipelines." },
+              { icon: LinkIcon, color: "text-gold", border: "hover:border-gold/30", title: "Blockchain-Anchored Logs", desc: "Cryptographic ledger hashes establishing immutable, verifiable histories of transactional and server actions." }
+            ].map((p, idx) => (
+              <motion.div
+                key={p.title}
+                custom={idx}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: false, margin: "-60px" }}
+                variants={cardFadeUpVariants}
+                className={`flex gap-5 p-6 rounded-xl border border-white/5 bg-[#0F1626]/40 ${p.border} transition-all duration-300`}
+              >
+                <div className={`${p.color} mt-0.5`}>
+                  <p.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-white mb-1.5">{p.title}</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed font-sans">{p.desc}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          6.9 CONTACT (Form + info)
+          6.9 CONTACT
           ========================================== */}
       <section id="contact" className="py-24 max-w-7xl mx-auto px-6 z-20 relative">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-          <div className="lg:col-span-5 flex flex-col items-start justify-center">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, margin: "-100px" }}
+            variants={cardLeftVariants}
+            className="lg:col-span-5 flex flex-col items-start justify-center"
+          >
             <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Direct Connection</h2>
             <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">Contact Us</h3>
             <p className="text-gray-300 leading-relaxed mb-8">
@@ -1378,9 +1499,15 @@ export default function Home() {
                 <span className="text-white">New Delhi, India</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="lg:col-span-7 bg-[#0F1626] border border-white/5 p-8 rounded-2xl shadow-2xl">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, margin: "-80px" }}
+            variants={cardRightVariants}
+            className="lg:col-span-7 bg-[#0F1626] border border-white/5 p-8 rounded-2xl shadow-2xl"
+          >
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">FULL NAME</label>
@@ -1452,12 +1579,12 @@ export default function Home() {
               <button
                 type="submit"
                 data-testid="btn-submit-contact"
-                className="w-full py-4 rounded-xl bg-gold hover:bg-gold/90 text-background font-bold text-sm tracking-wide transition-all shadow-lg hover:scale-[1.01] active:scale-95"
+                className="w-full py-4 rounded-xl bg-gold hover:bg-gold/90 text-background font-bold text-sm tracking-wide transition-all shadow-lg hover:scale-[1.01] active:scale-95 cursor-pointer"
               >
                 Send Message →
               </button>
             </form>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -1484,10 +1611,10 @@ export default function Home() {
 
           <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">NAVIGATION</span>
-            <button data-testid="footer-products" onClick={() => handleNavClick('products')} className="text-sm text-gray-400 hover:text-white transition-colors">Products</button>
-            <button data-testid="footer-services" onClick={() => handleNavClick('services')} className="text-sm text-gray-400 hover:text-white transition-colors">Services</button>
-            <button data-testid="footer-about" onClick={() => handleNavClick('about')} className="text-sm text-gray-400 hover:text-white transition-colors">About</button>
-            <button data-testid="footer-contact" onClick={() => handleNavClick('contact')} className="text-sm text-gray-400 hover:text-white transition-colors">Contact</button>
+            <button data-testid="footer-products" onClick={() => handleNavClick('products')} className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">Products</button>
+            <button data-testid="footer-services" onClick={() => handleNavClick('services')} className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">Services</button>
+            <button data-testid="footer-about" onClick={() => handleNavClick('about')} className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">About</button>
+            <button data-testid="footer-contact" onClick={() => handleNavClick('contact')} className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">Contact</button>
           </div>
 
           <div className="flex flex-col items-start gap-3">
@@ -1505,7 +1632,7 @@ export default function Home() {
           <div className="flex items-center gap-4 text-xs font-mono text-gray-500">
             <span>Sovereign-First Philosophy</span>
             <span>·</span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 animate-pulse">
               <Eye className="w-3.5 h-3.5 text-teal" />
               Real-time Global Visits: {visitorCount ?? '...'}
             </span>
