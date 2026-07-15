@@ -27,7 +27,99 @@ import { useToast } from '../components/ui/toast';
 import { Switch } from '../components/ui/switch';
 
 // ==========================================
-// 1. THREE.JS 3D SCROLL-LINKED CYBER SKY (FULL SCREEN)
+// CUSTOM MESH GENERATORS (CYBERSECURITY WIREFRAMES)
+// ==========================================
+
+// Helper to create a 3D wireframe Lock with glowing vertex nodes
+const createLockMesh = (color: number) => {
+  const lockGroup = new THREE.Group();
+  
+  const wireframeMat = new THREE.MeshBasicMaterial({
+    color: color,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.35
+  });
+
+  const nodePointMat = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.12,
+    transparent: true,
+    opacity: 0.9
+  });
+
+  // Lock Body (Box)
+  const bodyGeom = new THREE.BoxGeometry(1.4, 1.0, 0.4);
+  const body = new THREE.Mesh(bodyGeom, wireframeMat);
+  const bodyNodes = new THREE.Points(bodyGeom, nodePointMat);
+  lockGroup.add(body);
+  lockGroup.add(bodyNodes);
+
+  // Lock Shackle (Torus)
+  const shackleGeom = new THREE.TorusGeometry(0.45, 0.08, 6, 16, Math.PI);
+  const shackle = new THREE.Mesh(shackleGeom, wireframeMat);
+  const shackleNodes = new THREE.Points(shackleGeom, nodePointMat);
+  
+  shackle.position.y = 0.5;
+  shackle.rotation.z = Math.PI; // point shackle arch upwards
+  shackleNodes.position.y = 0.5;
+  shackleNodes.rotation.z = Math.PI;
+
+  lockGroup.add(shackle);
+  lockGroup.add(shackleNodes);
+
+  // Keyhole (Cylinder)
+  const keyholeGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.25, 6);
+  keyholeGeom.rotateX(Math.PI / 2);
+  const keyhole = new THREE.Mesh(keyholeGeom, wireframeMat);
+  keyhole.position.set(0, -0.15, 0.15);
+  lockGroup.add(keyhole);
+
+  return lockGroup;
+};
+
+// Helper to create a 3D wireframe Shield with glowing vertex nodes
+const createShieldMesh = (color: number) => {
+  const shieldGroup = new THREE.Group();
+
+  const wireframeMat = new THREE.MeshBasicMaterial({
+    color: color,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.35
+  });
+
+  const nodePointMat = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.12,
+    transparent: true,
+    opacity: 0.9
+  });
+
+  // Shield Top Cap (Flat Cylinder)
+  const topGeom = new THREE.CylinderGeometry(0.9, 0.9, 0.25, 5, 1);
+  const topMesh = new THREE.Mesh(topGeom, wireframeMat);
+  const topNodes = new THREE.Points(topGeom, nodePointMat);
+  shieldGroup.add(topMesh);
+  shieldGroup.add(topNodes);
+
+  // Shield Body (Cone pointing downwards)
+  const bodyGeom = new THREE.ConeGeometry(0.9, 1.4, 5);
+  bodyGeom.rotateX(Math.PI); // rotate downwards
+  const bodyMesh = new THREE.Mesh(bodyGeom, wireframeMat);
+  const bodyNodes = new THREE.Points(bodyGeom, nodePointMat);
+  
+  bodyMesh.position.y = -0.7;
+  bodyNodes.position.y = -0.7;
+  
+  shieldGroup.add(bodyMesh);
+  shieldGroup.add(bodyNodes);
+
+  return shieldGroup;
+};
+
+// ==========================================
+// 1. THREE.JS 3D SCROLL-LINKED CYBER SKY (FULL SCREEN CINEMATIC)
 // ==========================================
 interface ThreeDBackgroundProps {
   mousePos: { x: number; y: number };
@@ -145,30 +237,26 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     terrain.position.set(0, -6, -20);
     scene.add(terrain);
 
-    // 3D Matrix Cube Nodes (Teal wireframes)
-    const cubesGroup = new THREE.Group();
-    const cubeGeom = new THREE.BoxGeometry(1.2, 1.2, 1.2);
-    const cubeMat = new THREE.MeshBasicMaterial({
-      color: 0x0d9488,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.0 
-    });
+    // Floating Cyber Node Clouds (Locks and Shields representing network security layers)
+    const nodesGroup = new THREE.Group();
+    const nodeMeshes: THREE.Group[] = [];
+    const nodeCount = 10;
 
-    const cubeCount = 12;
-    const cubes: THREE.Mesh[] = [];
-    for (let i = 0; i < cubeCount; i++) {
-      const m = new THREE.Mesh(cubeGeom, cubeMat);
-      m.position.set(
+    for (let i = 0; i < nodeCount; i++) {
+      const isLock = Math.random() > 0.5;
+      const meshColor = isLock ? 0x2563eb : 0x0d9488;
+      const mesh = isLock ? createLockMesh(meshColor) : createShieldMesh(meshColor);
+
+      mesh.position.set(
         (Math.random() - 0.5) * 30,
-        (Math.random() - 0.5) * 15 + 3,
+        (Math.random() - 0.5) * 12 + 1,
         -Math.random() * 40 - 10
       );
-      m.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-      cubesGroup.add(m);
-      cubes.push(m);
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+      nodesGroup.add(mesh);
+      nodeMeshes.push(mesh);
     }
-    scene.add(cubesGroup);
+    scene.add(nodesGroup);
 
     // Giant Security Core Orb (Blue wireframe)
     const coreGeom = new THREE.IcosahedronGeometry(3.0, 1);
@@ -229,7 +317,7 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     jetGroup.add(fin);
 
     scene.add(jetGroup);
-    jetGroup.position.set(0, 0.2, 5); // Raised slightly for full-screen float
+    jetGroup.position.set(0, 0.2, 5); 
 
     // Animation variables
     let clock = new THREE.Clock();
@@ -248,6 +336,7 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
       );
       const sr = scrollRef.current.current;
       
+      // Speed acceleration proportional to scroll speed
       const scrollSpeedMultiplier = 1.0 + sr * 4.0;
       gridHelper.position.z += delta * 12 * scrollSpeedMultiplier;
       if (gridHelper.position.z > 6) gridHelper.position.z = 0;
@@ -264,10 +353,14 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
       }
       starsGeom.attributes.position.needsUpdate = true;
 
-      // Jet Plane motion
-      if (sr < 0.4) {
+      // ==========================================
+      // CONTINUOUS SCROLL-LINKED STORYBOARD PATHS
+      // ==========================================
+
+      // 1. Jet Plane takeoff & zoom (Scroll 0.0 to 0.35)
+      if (sr < 0.35) {
         jetGroup.visible = true;
-        const planeZ = 5 - (sr / 0.4) * 35;
+        const planeZ = 5 - (sr / 0.35) * 35;
         jetGroup.position.z = THREE.MathUtils.lerp(jetGroup.position.z, planeZ, 0.1);
         
         const planeRoll = -sr * Math.PI * 1.2;
@@ -281,14 +374,14 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
         jetGroup.visible = false;
       }
 
-      // Digital Mountains
-      if (sr >= 0.15 && sr <= 0.65) {
+      // 2. Scrolling digital mountain waves (Scroll 0.20 to 0.60)
+      if (sr >= 0.18 && sr <= 0.62) {
         terrain.visible = true;
         let opacity = 0;
         if (sr < 0.35) {
-          opacity = (sr - 0.15) / 0.2;
+          opacity = (sr - 0.18) / 0.17;
         } else {
-          opacity = 1.0 - (sr - 0.35) / 0.3;
+          opacity = 1.0 - (sr - 0.35) / 0.27;
         }
         terrainMat.opacity = opacity * 0.22;
         
@@ -298,49 +391,59 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
         terrain.visible = false;
       }
 
-      // Matrix Nodes
-      if (sr >= 0.45 && sr <= 0.85) {
-        cubesGroup.visible = true;
+      // 3. Floating Holographic Locks & Shields (Scroll 0.50 to 0.85)
+      if (sr >= 0.48 && sr <= 0.88) {
+        nodesGroup.visible = true;
         let opacity = 0;
         if (sr < 0.65) {
-          opacity = (sr - 0.45) / 0.2;
+          opacity = (sr - 0.48) / 0.17;
         } else {
-          opacity = 1.0 - (sr - 0.65) / 0.2;
+          opacity = 1.0 - (sr - 0.65) / 0.23;
         }
-        cubeMat.opacity = opacity * 0.4;
 
-        cubes.forEach((cube, idx) => {
-          cube.rotation.x += delta * 0.8 * (idx % 2 === 0 ? 1 : -1);
-          cube.rotation.y += delta * 0.5;
-          cube.position.z += delta * 10;
-          if (cube.position.z > 10) {
-            cube.position.z = -50;
-            cube.position.x = (Math.random() - 0.5) * 30;
+        // Apply opacity to children basic materials
+        nodeMeshes.forEach((mesh, idx) => {
+          mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+              child.material.opacity = opacity * 0.35;
+            }
+            if (child instanceof THREE.Points && child.material instanceof THREE.PointsMaterial) {
+              child.material.opacity = opacity * 0.85;
+            }
+          });
+
+          // Rotate and translate meshes down the cyber network sky
+          mesh.rotation.x += delta * 0.4 * (idx % 2 === 0 ? 1 : -1);
+          mesh.rotation.y += delta * 0.3;
+          mesh.position.z += delta * 9 * scrollSpeedMultiplier;
+          if (mesh.position.z > 10) {
+            mesh.position.z = -50;
+            mesh.position.x = (Math.random() - 0.5) * 30;
           }
         });
       } else {
-        cubesGroup.visible = false;
+        nodesGroup.visible = false;
       }
 
-      // Security Core Orb
-      if (sr >= 0.70) {
+      // 4. Security Core Orb (Scroll 0.75 to 1.00)
+      if (sr >= 0.75) {
         securityCore.visible = true;
-        const opacity = (sr - 0.70) / 0.25;
+        const opacity = (sr - 0.75) / 0.25;
         coreMat.opacity = Math.min(opacity * 0.35, 0.35);
 
         securityCore.rotation.y += delta * 0.4;
         securityCore.rotation.x += delta * 0.2;
         
-        const coreScale = 1.0 + Math.sin(elapsed * 2.0) * 0.05 + (sr - 0.7) * 0.5;
+        const coreScale = 1.0 + Math.sin(elapsed * 2.0) * 0.05 + (sr - 0.75) * 0.5;
         securityCore.scale.set(coreScale, coreScale, coreScale);
       } else {
         securityCore.visible = false;
       }
 
-      // Mouse Parallax & Dynamic scroll pan/orbit
+      // 5. Cinematic camera flight path mapping
       const targetCamX = mouseRef.current.x * 2.5;
       const targetCamY = 2 + mouseRef.current.y * 1.5 - sr * 4.0;
-      const targetCamZ = 15 - sr * 5.0;
+      const targetCamZ = 15 - sr * 6.0;
 
       camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
       camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
@@ -924,7 +1027,7 @@ export default function Home() {
       className="relative min-h-screen text-[#0F172A] overflow-x-hidden font-sans"
     >
       {/* ==========================================
-          GLOBAL FULL-VIEWPORT FIXED 3D BACKGROUND
+          GLOBAL VIEWPORT FIXED 3D CINEMATIC BACKDROP
           ========================================== */}
       <div className="fixed inset-0 w-full h-full pointer-events-none -z-10">
         <ThreeDBackground mousePos={mousePos} />
