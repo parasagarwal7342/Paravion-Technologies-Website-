@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: 222 58% 6%;    /* #080C16 */
+  --card:        222 43% 11%;  /* #0F1626 */
+  --primary:     221 83% 53%;  /* #2563EB */
+  
+  --color-gold-hex: #F5A623;
+  --color-teal-hex: #00D4AA;
+  --color-card-surface-hex: #0F1626;
+
+  --foreground: 210 40% 98%;
+  --muted: 215 20% 65%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+  --radius: 0.5rem;
+}
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  
+  --color-gold: var(--color-gold-hex);
+  --color-teal: var(--color-teal-hex);
+  --color-card-surface: var(--color-card-surface-hex);
+}
+
+@utility glow-teal {
+  box-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+}
+
+@utility glow-blue {
+  box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #080C16;
+}
+::-webkit-scrollbar-thumb {
+  background: #0F1626;
+  border-radius: 4px;
+  border: 2px solid #080C16;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2563EB;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #080C16;
+  color: #F0F4FF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
