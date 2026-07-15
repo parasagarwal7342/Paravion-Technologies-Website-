@@ -2,19 +2,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: 222 58% 6%;    /* #080C16 */
-  --card:        222 43% 11%;  /* #0F1626 */
-  --primary:     221 83% 53%;  /* #2563EB */
+  --background: 210 40% 98%;    /* #F8FAFC - slate 50 */
+  --card:        0 0% 100%;     /* #FFFFFF */
+  --primary:     221.2 83.2% 53.3%; /* #2563EB - Accent Blue */
   
-  --color-gold-hex: #F5A623;
-  --color-teal-hex: #00D4AA;
-  --color-card-surface-hex: #0F1626;
+  --color-gold-hex: #D97706;    /* Amber 600 for light mode readability */
+  --color-teal-hex: #0D9488;    /* Teal 600 for light mode readability */
+  --color-card-surface-hex: #FFFFFF;
 
-  --foreground: 210 40% 98%;
-  --muted: 215 20% 65%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
+  --foreground: 222.2 47.4% 11.2%; /* #0F172A - slate 900 */
+  --muted: 215.4 16.3% 46.9%;      /* #475569 - slate 600 */
+  --border: 214.3 31.8% 91.4%;     /* #E2E8F0 - slate 200 */
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
   --radius: 0.5rem;
 }
 
@@ -28,11 +28,11 @@
 }
 
 @utility glow-teal {
-  box-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+  box-shadow: 0 4px 20px rgba(13, 148, 136, 0.12);
 }
 
 @utility glow-blue {
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 25px rgba(37, 99, 235, 0.12);
 }
 
 /* Custom Scrollbar */
@@ -40,12 +40,12 @@
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #080C16;
+  background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #0F1626;
+  background: #CBD5E1;
   border-radius: 4px;
-  border: 2px solid #080C16;
+  border: 2px solid #F1F5F9;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #2563EB;
@@ -53,35 +53,40 @@
 
 html {
   scroll-behavior: smooth;
-  background-color: #080C16;
-  color: #F0F4FF;
+  background-color: #F8FAFC;
+  color: #0F172A;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 body {
   margin: 0;
   overflow-x: hidden;
+  /* Premium light high-tech background image watermark */
+  background-image: linear-gradient(rgba(248, 250, 252, 0.94), rgba(248, 250, 252, 0.94)), url('/light_tech_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
-/* Airplane Window Styling & Parallax Effects */
+/* Airplane Window Styling & Parallax Effects (Metallic Silver for Light Theme) */
 .airplane-window-bezel {
-  background: #0b111e;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 30%, #cbd5e1 70%, #94a3b8 100%);
   box-shadow: 
-    inset 0 0 60px rgba(0, 0, 0, 0.95),
-    0 15px 40px rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+    inset 0 0 20px rgba(0, 0, 0, 0.1),
+    0 15px 45px rgba(15, 23, 42, 0.15);
+  border: 6px solid #f8fafc;
 }
 
 .airplane-window-inner-shadow {
-  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9);
+  box-shadow: inset 0 0 35px rgba(15, 23, 42, 0.2);
 }
 
 .airplane-glass-shimmer {
   background: linear-gradient(
     120deg, 
-    rgba(255, 255, 255, 0.12) 0%, 
-    rgba(255, 255, 255, 0.03) 30%, 
-    rgba(255, 255, 255, 0) 30%, 
+    rgba(255, 255, 255, 0.35) 0%, 
+    rgba(255, 255, 255, 0.08) 35%, 
+    rgba(255, 255, 255, 0) 35%, 
     rgba(255, 255, 255, 0) 100%
   );
   pointer-events: none;

@@ -27,7 +27,7 @@ import { useToast } from '../components/ui/toast';
 import { Switch } from '../components/ui/switch';
 
 // ==========================================
-// 1. THREE.JS 3D SCROLL-LINKED CYBER SKY
+// 1. THREE.JS 3D SCROLL-LINKED CYBER SKY (LIGHT THEME)
 // ==========================================
 interface ThreeDBackgroundProps {
   mousePos: { x: number; y: number };
@@ -65,30 +65,32 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
 
     // Scene & Camera
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x080c16, 0.012);
+    scene.fog = new THREE.FogExp2(0xf8fafc, 0.015); // fade to slate white
 
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
     camera.position.set(0, 2, 15);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    // Alpha true for transparent WebGL rendering over the watermark image
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0); // fully transparent clear color
     container.appendChild(renderer.domElement);
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x00d4aa, 1.5);
+    const dirLight = new THREE.DirectionalLight(0x3b82f6, 1.2); // light blue light source
     dirLight.position.set(5, 12, 10);
     scene.add(dirLight);
 
-    const pointLight = new THREE.PointLight(0x2563eb, 2.5, 60);
+    const pointLight = new THREE.PointLight(0x2563eb, 2.0, 60);
     pointLight.position.set(0, 0, 5);
     scene.add(pointLight);
 
-    // Starfield
-    const starsCount = 250;
+    // Starfield (Deep blue/teal points for light theme contrast)
+    const starsCount = 200;
     const starsGeom = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starsCount * 3);
     const starColors = new Float32Array(starsCount * 3);
@@ -99,9 +101,10 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
       starPositions[i * 3 + 2] = -Math.random() * 80;
 
       const isTeal = Math.random() > 0.5;
-      starColors[i * 3] = isTeal ? 0.0 : 0.14;
-      starColors[i * 3 + 1] = isTeal ? 0.83 : 0.38;
-      starColors[i * 3 + 2] = isTeal ? 0.66 : 0.92;
+      // R, G, B channels mapping to Slate/Indigo values
+      starColors[i * 3] = isTeal ? 0.05 : 0.14; 
+      starColors[i * 3 + 1] = isTeal ? 0.58 : 0.38; 
+      starColors[i * 3 + 2] = isTeal ? 0.53 : 0.92; 
     }
 
     starsGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
@@ -116,18 +119,17 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     const starField = new THREE.Points(starsGeom, starMat);
     scene.add(starField);
 
-    // Base Scrolling Grid Plane
-    const gridHelper = new THREE.GridHelper(150, 50, 0x2563eb, 0x131b2e);
+    // Base Scrolling Grid Plane (Soft blue lines)
+    const gridHelper = new THREE.GridHelper(150, 50, 0x3b82f6, 0xe2e8f0);
     gridHelper.position.y = -4;
     scene.add(gridHelper);
 
-    // 3D Digital Wireframe Mountains Terrain (Fades in during scroll)
+    // 3D Digital Wireframe Mountains Terrain (Soft blue coordinates)
     const terrainGeom = new THREE.PlaneGeometry(120, 120, 24, 24);
     const posAttr = terrainGeom.attributes.position;
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
       const y = posAttr.getY(i);
-      // Create wireframe peaks using combined sine waves
       const z = Math.sin(x * 0.08) * Math.cos(y * 0.08) * 3.5 + Math.sin(x * 0.04) * 2.0;
       posAttr.setZ(i, z);
     }
@@ -135,23 +137,23 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     terrainGeom.rotateX(-Math.PI / 2);
 
     const terrainMat = new THREE.MeshBasicMaterial({
-      color: 0x2563eb,
+      color: 0x3b82f6,
       wireframe: true,
       transparent: true,
-      opacity: 0.0 // invisible at start (0% scroll)
+      opacity: 0.0 
     });
     const terrain = new THREE.Mesh(terrainGeom, terrainMat);
     terrain.position.set(0, -6, -20);
     scene.add(terrain);
 
-    // 3D Matrix Cube Nodes (Floating clouds of digital data packages)
+    // 3D Matrix Cube Nodes (Teal wireframes)
     const cubesGroup = new THREE.Group();
     const cubeGeom = new THREE.BoxGeometry(1.2, 1.2, 1.2);
     const cubeMat = new THREE.MeshBasicMaterial({
-      color: 0x00d4aa,
+      color: 0x0d9488,
       wireframe: true,
       transparent: true,
-      opacity: 0.0 // invisible at start
+      opacity: 0.0 
     });
 
     const cubeCount = 12;
@@ -169,22 +171,22 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     }
     scene.add(cubesGroup);
 
-    // Giant Security Core Orb (Visible towards final scroll)
+    // Giant Security Core Orb (Blue wireframe)
     const coreGeom = new THREE.IcosahedronGeometry(3.0, 1);
     const coreMat = new THREE.MeshBasicMaterial({
       color: 0x2563eb,
       wireframe: true,
       transparent: true,
-      opacity: 0.0 // invisible at start
+      opacity: 0.0 
     });
     const securityCore = new THREE.Mesh(coreGeom, coreMat);
     securityCore.position.set(0, 1, -10);
     scene.add(securityCore);
 
-    // 3D Wireframe Jet Plane
+    // 3D Wireframe Jet Plane (Rich Blue wireframe)
     const jetGroup = new THREE.Group();
     const jetMat = new THREE.MeshBasicMaterial({
-      color: 0x00d4aa,
+      color: 0x2563eb,
       wireframe: true,
       transparent: true,
       opacity: 0.8
@@ -239,24 +241,19 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
       const delta = clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
-      // Smoothly interpolate scroll ratio (dynamic lerp)
+      // Smoothly interpolate scroll ratio
       scrollRef.current.current = THREE.MathUtils.lerp(
         scrollRef.current.current,
         scrollRef.current.target,
-        0.05 // inertia response speed
+        0.05 
       );
       const sr = scrollRef.current.current;
-
-      // ==========================================
-      // SCROLL-LINKED NARRATIVE STATES
-      // ==========================================
       
-      // 1. Grid speed accelerates with scroll depth
       const scrollSpeedMultiplier = 1.0 + sr * 4.0;
       gridHelper.position.z += delta * 12 * scrollSpeedMultiplier;
       if (gridHelper.position.z > 6) gridHelper.position.z = 0;
 
-      // 2. Stars move faster and warp
+      // Stars
       const positions = starsGeom.attributes.position.array as Float32Array;
       for (let i = 0; i < starsCount; i++) {
         positions[i * 3 + 2] += delta * 16 * scrollSpeedMultiplier;
@@ -268,48 +265,41 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
       }
       starsGeom.attributes.position.needsUpdate = true;
 
-      // 3. Wireframe Jet Flight Paths (0.0 to 0.4 Scroll)
+      // Jet Plane motion
       if (sr < 0.4) {
         jetGroup.visible = true;
-        
-        // Plane speeds forward (zooms out of window view)
         const planeZ = 5 - (sr / 0.4) * 35;
         jetGroup.position.z = THREE.MathUtils.lerp(jetGroup.position.z, planeZ, 0.1);
         
-        // Plane banks to the side and pitches
         const planeRoll = -sr * Math.PI * 1.2;
         const planePitch = sr * Math.PI * 0.2;
         jetGroup.rotation.z = THREE.MathUtils.lerp(jetGroup.rotation.z, planeRoll, 0.1);
         jetGroup.rotation.x = THREE.MathUtils.lerp(jetGroup.rotation.x, planePitch, 0.1);
         
-        // Jet hovers subtly
         jetGroup.position.y = Math.sin(elapsed * 2.5) * 0.15;
         jetGroup.position.x = Math.cos(elapsed * 1.5) * 0.1;
       } else {
-        // Plane has flown away
         jetGroup.visible = false;
       }
 
-      // 4. Digital Mountains Terrain (0.2 to 0.6 Scroll)
+      // Digital Mountains
       if (sr >= 0.15 && sr <= 0.65) {
         terrain.visible = true;
-        // Fade opacity in and out
         let opacity = 0;
         if (sr < 0.35) {
-          opacity = (sr - 0.15) / 0.2; // fade in
+          opacity = (sr - 0.15) / 0.2;
         } else {
-          opacity = 1.0 - (sr - 0.35) / 0.3; // fade out
+          opacity = 1.0 - (sr - 0.35) / 0.3;
         }
         terrainMat.opacity = opacity * 0.22;
         
-        // Scroll terrain
         terrain.position.z += delta * 15;
         if (terrain.position.z > 20) terrain.position.z = -40;
       } else {
         terrain.visible = false;
       }
 
-      // 5. Matrix Nodes (0.5 to 0.8 Scroll)
+      // Matrix Nodes
       if (sr >= 0.45 && sr <= 0.85) {
         cubesGroup.visible = true;
         let opacity = 0;
@@ -318,9 +308,8 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
         } else {
           opacity = 1.0 - (sr - 0.65) / 0.2;
         }
-        cubeMat.opacity = opacity * 0.5;
+        cubeMat.opacity = opacity * 0.4;
 
-        // Rotate and scroll floating cubes
         cubes.forEach((cube, idx) => {
           cube.rotation.x += delta * 0.8 * (idx % 2 === 0 ? 1 : -1);
           cube.rotation.y += delta * 0.5;
@@ -334,13 +323,12 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
         cubesGroup.visible = false;
       }
 
-      // 6. Security Core Orb (0.75 to 1.0 Scroll)
+      // Security Core Orb
       if (sr >= 0.70) {
         securityCore.visible = true;
         const opacity = (sr - 0.70) / 0.25;
-        coreMat.opacity = Math.min(opacity * 0.4, 0.4);
+        coreMat.opacity = Math.min(opacity * 0.35, 0.35);
 
-        // Spin and scale security core
         securityCore.rotation.y += delta * 0.4;
         securityCore.rotation.x += delta * 0.2;
         
@@ -350,10 +338,10 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
         securityCore.visible = false;
       }
 
-      // 7. Mouse Parallax Tilt
+      // Mouse Parallax
       const targetCamX = mouseRef.current.x * 2.0;
-      const targetCamY = 2 + mouseRef.current.y * 1.5 - sr * 4.0; // cameras sinks as we scroll
-      const targetCamZ = 15 - sr * 6.0; // camera zooms closer
+      const targetCamY = 2 + mouseRef.current.y * 1.5 - sr * 4.0;
+      const targetCamZ = 15 - sr * 6.0;
 
       camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
       camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
@@ -414,16 +402,16 @@ const StatGlobe3D: React.FC = () => {
 
     const globeGeom = new THREE.SphereGeometry(1.6, 12, 12);
     const globeMat = new THREE.MeshBasicMaterial({
-      color: 0x00d4aa,
+      color: 0x2563eb, // blue globe for light theme
       wireframe: true,
       transparent: true,
-      opacity: 0.35
+      opacity: 0.4
     });
     const globe = new THREE.Mesh(globeGeom, globeMat);
     scene.add(globe);
 
     const pointsMat = new THREE.PointsMaterial({
-      color: 0xffffff,
+      color: 0x0d9488, // teal nodes
       size: 0.12,
       transparent: true,
       opacity: 0.8
@@ -433,10 +421,10 @@ const StatGlobe3D: React.FC = () => {
 
     const ringGeom = new THREE.RingGeometry(2.0, 2.05, 24);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x2563eb,
+      color: 0x0d9488,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.6
+      opacity: 0.5
     });
     const ring = new THREE.Mesh(ringGeom, ringMat);
     ring.rotation.x = Math.PI / 3;
@@ -482,11 +470,11 @@ const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
   useEffect(() => {
     if (!coreRef.current || !ringRef.current) return;
     
-    let colorHex = 0xef4444; 
+    let colorHex = 0xe11d48; // rose red (0-1)
     if (yesCount >= 4) {
-      colorHex = 0x00d4aa; 
+      colorHex = 0x0d9488; // teal green
     } else if (yesCount >= 2) {
-      colorHex = 0xf5a623; 
+      colorHex = 0xd97706; // amber
     }
 
     const material = coreRef.current.material as THREE.MeshBasicMaterial;
@@ -514,7 +502,7 @@ const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
 
     const coreGeom = new THREE.IcosahedronGeometry(1.5, 1);
     const coreMat = new THREE.MeshBasicMaterial({
-      color: 0xef4444,
+      color: 0xe11d48,
       wireframe: true,
       transparent: true,
       opacity: 0.6
@@ -524,7 +512,7 @@ const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
     coreRef.current = core;
 
     const pointsMat = new THREE.PointsMaterial({
-      color: 0xffffff,
+      color: 0x0f172a, // dark points
       size: 0.1,
       transparent: true,
       opacity: 0.8
@@ -534,7 +522,7 @@ const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
 
     const ringGeom = new THREE.TorusGeometry(2.1, 0.03, 8, 32);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xef4444,
+      color: 0xe11d48,
       transparent: true,
       opacity: 0.4
     });
@@ -629,7 +617,7 @@ const AnimatedCounter: React.FC<CounterProps> = ({ value, prefix = '', suffix = 
   }, [isInView, value]);
 
   return (
-    <span ref={ref} className="font-mono text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+    <span ref={ref} className="font-mono text-3xl md:text-4xl font-extrabold text-[#0F172A] tracking-tight">
       {prefix}
       {count.toLocaleString('en-IN', {
         minimumFractionDigits: decimals,
@@ -835,7 +823,6 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
 
-  // Parallax Mouse tracking state
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Security Health Check State
@@ -852,20 +839,19 @@ export default function Home() {
   // Calculate live risk assessment
   const yesCount = assessmentAnswers.filter(Boolean).length;
   let riskStatus = "HIGH RISK";
-  let riskColor = "text-red-500 border-red-500/20 bg-red-500/10";
+  let riskColor = "text-rose-600 border-rose-500/20 bg-rose-500/5";
   let riskMessage = "Critical exposure. Contact us immediately.";
 
   if (yesCount >= 4) {
     riskStatus = "LOW RISK";
-    riskColor = "text-green-400 border-green-500/20 bg-green-500/10";
+    riskColor = "text-teal border-teal/20 bg-teal/5";
     riskMessage = "Good posture. Let us take you to enterprise-grade.";
   } else if (yesCount >= 2) {
     riskStatus = "MEDIUM RISK";
-    riskColor = "text-amber-400 border-amber-500/20 bg-amber-500/10";
+    riskColor = "text-amber-600 border-amber-500/20 bg-amber-500/5";
     riskMessage = "Significant gaps remain. Let's fix them.";
   }
 
-  // Mouse move handler for Parallax effects
   const handleMouseMove = (e: React.MouseEvent) => {
     const x = (e.clientX / window.innerWidth) * 2 - 1;
     const y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -936,36 +922,36 @@ export default function Home() {
   return (
     <div 
       onMouseMove={handleMouseMove}
-      className="relative min-h-screen bg-[#080C16] text-[#F0F4FF] overflow-x-hidden"
+      className="relative min-h-screen text-[#0F172A] overflow-x-hidden font-sans"
     >
       {/* ==========================================
-          6.1 NAVBAR (Fixed Glassmorphic Header)
+          6.1 NAVBAR (Fixed Glassmorphic Header - Light Theme)
           ========================================== */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#080C16]/80 backdrop-blur-md border-b border-white/5 transition-all duration-300">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavClick('home')}>
             <svg className="w-9 h-9" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#00D4AA" />
+                  <stop offset="0%" stopColor="#0D9488" />
                   <stop offset="100%" stopColor="#2563EB" />
                 </linearGradient>
               </defs>
               <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#hexGrad)" />
-              <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#080C16" />
+              <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#F8FAFC" />
               <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#hexGrad)" />
             </svg>
-            <span className="text-white font-extrabold tracking-[0.2em] font-sans text-lg md:text-xl">
+            <span className="text-[#0F172A] font-extrabold tracking-[0.2em] font-sans text-lg md:text-xl">
               PARAVION <span className="text-teal font-light">TECHNOLOGIES</span>
             </span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
-            <button data-testid="nav-home" onClick={() => handleNavClick('home')} className="text-sm font-medium hover:text-teal transition-colors">Home</button>
-            <button data-testid="nav-products" onClick={() => handleNavClick('products')} className="text-sm font-medium hover:text-teal transition-colors">Products</button>
-            <button data-testid="nav-services" onClick={() => handleNavClick('services')} className="text-sm font-medium hover:text-teal transition-colors">Services</button>
-            <button data-testid="nav-about" onClick={() => handleNavClick('about')} className="text-sm font-medium hover:text-teal transition-colors">About</button>
-            <button data-testid="nav-contact" onClick={() => handleNavClick('contact')} className="text-sm font-medium hover:text-teal transition-colors">Contact</button>
+            <button data-testid="nav-home" onClick={() => handleNavClick('home')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Home</button>
+            <button data-testid="nav-products" onClick={() => handleNavClick('products')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Products</button>
+            <button data-testid="nav-services" onClick={() => handleNavClick('services')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Services</button>
+            <button data-testid="nav-about" onClick={() => handleNavClick('about')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">About</button>
+            <button data-testid="nav-contact" onClick={() => handleNavClick('contact')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Contact</button>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
@@ -978,7 +964,7 @@ export default function Home() {
             <button
               data-testid="btn-nav-cta"
               onClick={() => handleNavClick('contact')}
-              className="px-6 py-2.5 rounded-full bg-gold hover:bg-gold/90 text-background font-bold text-sm transition-transform hover:scale-105 active:scale-95"
+              className="px-6 py-2.5 rounded-full bg-gold hover:bg-gold/90 text-white font-bold text-sm transition-transform hover:scale-105 active:scale-95 cursor-pointer"
             >
               Get Started
             </button>
@@ -986,7 +972,7 @@ export default function Home() {
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-white/5 text-white transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-900 transition-colors"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -998,15 +984,15 @@ export default function Home() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-white/5 bg-[#080C16] px-6 py-6 flex flex-col gap-5"
+              className="md:hidden border-t border-slate-200 bg-white px-6 py-6 flex flex-col gap-5"
             >
-              <button onClick={() => handleNavClick('home')} className="text-left text-base font-semibold hover:text-teal">Home</button>
-              <button onClick={() => handleNavClick('products')} className="text-left text-base font-semibold hover:text-teal">Products</button>
-              <button onClick={() => handleNavClick('services')} className="text-left text-base font-semibold hover:text-teal">Services</button>
-              <button onClick={() => handleNavClick('about')} className="text-left text-base font-semibold hover:text-teal">About</button>
-              <button onClick={() => handleNavClick('contact')} className="text-left text-base font-semibold hover:text-teal">Contact</button>
+              <button onClick={() => handleNavClick('home')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">Home</button>
+              <button onClick={() => handleNavClick('products')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">Products</button>
+              <button onClick={() => handleNavClick('services')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">Services</button>
+              <button onClick={() => handleNavClick('about')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">About</button>
+              <button onClick={() => handleNavClick('contact')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">Contact</button>
               
-              <div className="h-px bg-white/5 my-2" />
+              <div className="h-px bg-slate-100 my-2" />
               
               {visitorCount !== null && (
                 <div className="flex items-center gap-2 self-start px-3 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-xs text-teal font-mono">
@@ -1016,7 +1002,7 @@ export default function Home() {
               )}
               <button
                 onClick={() => handleNavClick('contact')}
-                className="w-full py-3 rounded-full bg-gold text-background font-bold text-center transition-transform hover:scale-[1.02]"
+                className="w-full py-3 rounded-full bg-gold text-white font-bold text-center transition-transform hover:scale-[1.02]"
               >
                 Get Started
               </button>
@@ -1026,28 +1012,31 @@ export default function Home() {
       </nav>
 
       {/* ==========================================
-          6.2 HERO (Immersive Passenger Window)
+          6.2 HERO (Immersive Passenger Window - Silver finish)
           ========================================== */}
       <section id="home" className="relative min-h-screen w-full flex items-center pt-20 overflow-hidden">
         
-        {/* Full-Screen Passenger Window Frame Mask */}
-        <div className="absolute inset-0 z-0 bg-[#080C16] flex items-center justify-center pointer-events-none p-4 md:p-10 select-none">
-          <div className="absolute inset-0 bg-[#0f1524] opacity-95" />
-          
+        {/* Full-Screen Metallic Passenger Window Frame */}
+        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none p-4 md:p-10 select-none">
+          {/* Transparent canvas container showing the watermark image through WebGL */}
           <div className="absolute inset-[3%] md:inset-[6%_12%] rounded-[40px] md:rounded-[80px_80px_80px_80px_/_120px_120px_120px_120px] airplane-window-bezel pointer-events-auto overflow-hidden">
+            
+            {/* Transparent WebGL canvas scene */}
             <ThreeDBackground mousePos={mousePos} />
-            <div className="absolute inset-0 airplane-glass-shimmer mix-blend-screen opacity-70 z-10" />
+            
+            <div className="absolute inset-0 airplane-glass-shimmer mix-blend-screen opacity-50 z-10" />
             <div className="absolute inset-0 airplane-window-inner-shadow z-10" />
           </div>
         </div>
 
+        {/* Hero floating contents */}
         <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center py-16">
-          <div className="lg:col-span-8 flex flex-col items-start text-left bg-[#080C16]/50 backdrop-blur-sm p-8 rounded-2xl border border-white/5 shadow-2xl">
+          <div className="lg:col-span-8 flex flex-col items-start text-left bg-white/70 backdrop-blur-md p-8 rounded-2xl border border-slate-200/50 shadow-xl">
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="mb-5 px-4 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-teal text-xs font-mono tracking-widest uppercase font-semibold"
+              className="mb-5 px-4 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-teal text-xs font-mono tracking-widest uppercase font-bold"
             >
               Indian Cyber Sovereignty // 2026
             </motion.div>
@@ -1056,17 +1045,17 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl md:text-7xl font-extrabold tracking-tight text-white mb-6 leading-[1.1] font-sans"
+              className="text-4xl md:text-7xl font-extrabold tracking-tight text-slate-900 mb-6 leading-[1.1] font-sans"
             >
               Defend. Develop.<br />
-              <span className="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">Dominate.</span>
+              <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">Dominate.</span>
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base md:text-lg text-gray-300 max-w-2xl mb-10 leading-relaxed font-sans"
+              className="text-base md:text-lg text-slate-600 max-w-2xl mb-10 leading-relaxed font-sans"
             >
               Paravion Technologies builds AI-powered cybersecurity systems and enterprise digital products that protect and scale modern businesses.
             </motion.p>
@@ -1097,47 +1086,47 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.3 STATS BAR (6-column counters + 3D Globe)
+          6.3 STATS BAR (6-column counters + 3D Globe - Light theme)
           ========================================== */}
-      <section className="relative bg-[#0F1626] border-y border-white/5 py-12 z-20">
+      <section className="relative bg-slate-100/80 backdrop-blur-md border-y border-slate-200/50 py-12 z-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-center items-center">
             <div className="flex flex-col gap-1 items-center">
               <StatGlobe3D />
               <AnimatedCounter value={14.4} suffix="M+" decimals={1} />
-              <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Nodal Points Secured</span>
+              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Nodal Points Secured</span>
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-teal font-mono text-xl border border-teal/15 bg-teal/5 rounded-full mb-2">14ms</div>
+              <div className="h-20 w-20 flex items-center justify-center text-teal font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">14ms</div>
               <AnimatedCounter value={14} suffix="ms" />
-              <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">UBS Engine Latency</span>
+              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">UBS Engine Latency</span>
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-blue-500 font-mono text-xl border border-blue-500/15 bg-blue-500/5 rounded-full mb-2">₹40B</div>
+              <div className="h-20 w-20 flex items-center justify-center text-blue-600 font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">₹40B</div>
               <AnimatedCounter value={40} prefix="INR " suffix="B+" />
-              <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Fraud Prevented</span>
+              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Fraud Prevented</span>
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-gold font-mono text-xl border border-gold/15 bg-gold/5 rounded-full mb-2">PAT</div>
+              <div className="h-20 w-20 flex items-center justify-center text-gold font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">PAT</div>
               <AnimatedCounter value={8} />
-              <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Core Patents Pending</span>
+              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Core Patents Pending</span>
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-white/50 font-mono text-xl border border-white/5 bg-white/5 rounded-full mb-2">2026</div>
+              <div className="h-20 w-20 flex items-center justify-center text-slate-500 font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">2026</div>
               <AnimatedCounter value={5} />
-              <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Products Built in 2026</span>
+              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Products Built in 2026</span>
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-green-400 font-mono text-xl border border-green-500/15 bg-green-500/5 rounded-full mb-2">LIVE</div>
+              <div className="h-20 w-20 flex items-center justify-center text-green-600 font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">LIVE</div>
               <AnimatedCounter value={1} />
-              <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Live Deployments</span>
+              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Live Deployments</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          6.4 PRODUCTS SECTION (Scroll Stagger Spring)
+          6.4 PRODUCTS SECTION (Light Theme Cards)
           ========================================== */}
       <section id="products" className="py-24 max-w-7xl mx-auto px-6 z-20 relative">
         <motion.div 
@@ -1148,19 +1137,19 @@ export default function Home() {
           className="flex flex-col items-center text-center mb-16"
         >
           <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Our Products</h2>
-          <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">What We've Built</h3>
-          <p className="text-gray-400 max-w-2xl leading-relaxed">
+          <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">What We've Built</h3>
+          <p className="text-slate-600 max-w-2xl leading-relaxed">
             From deployed enterprise platforms to advanced cybersecurity prototypes — every product is real, technical, and solving a critical problem.
           </p>
 
-          <div className="flex bg-[#0F1626] border border-white/5 p-1 rounded-full mt-10">
+          <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-full mt-10">
             {['All', 'Deployed', 'Prototype'].map((t) => (
               <button
                 key={t}
                 data-testid={`filter-${t.toLowerCase()}`}
                 onClick={() => setFilter(t as any)}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${
-                  filter === t ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+                  filter === t ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 {t}
@@ -1181,16 +1170,16 @@ export default function Home() {
                 viewport={{ once: false, margin: "-80px" }}
                 variants={idx % 2 === 0 ? cardLeftVariants : cardRightVariants}
                 data-testid={`card-product-${p.id}`}
-                className="group relative flex flex-col justify-between p-8 rounded-2xl border border-white/5 bg-[#0F1626]/80 hover:border-teal/30 hover:glow-teal transition-all duration-300"
+                className="group relative flex flex-col justify-between p-8 rounded-2xl border border-slate-200/60 bg-white/80 hover:border-teal/50 hover:shadow-lg transition-all duration-300"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-mono text-gold tracking-widest font-semibold uppercase">PARAVION TECH</span>
+                    <span className="text-xs font-mono text-gold tracking-widest font-bold uppercase">PARAVION TECH</span>
                     <span
                       className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider border ${
                         p.status === 'DEPLOYED'
-                          ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                          : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                          ? 'bg-green-500/10 text-green-700 border-green-500/20'
+                          : 'bg-amber-500/10 text-amber-700 border-amber-500/20'
                       }`}
                     >
                       {p.badgeText} · 2026
@@ -1198,21 +1187,21 @@ export default function Home() {
                   </div>
 
                   {p.callout && (
-                    <div className="mb-4 p-3 rounded-lg border border-teal/15 bg-teal/5 text-teal text-xs italic font-medium leading-relaxed">
+                    <div className="mb-4 p-3 rounded-lg border border-teal/15 bg-teal/5 text-teal text-xs italic font-semibold leading-relaxed">
                       {p.callout}
                     </div>
                   )}
 
-                  <h4 className="text-2xl font-extrabold text-white mb-1 group-hover:text-teal transition-colors">{p.name}</h4>
-                  <p className="text-xs font-mono text-gold mb-4 uppercase tracking-wider">{p.subtitle}</p>
+                  <h4 className="text-2xl font-extrabold text-[#0F172A] mb-1 group-hover:text-blue-600 transition-colors">{p.name}</h4>
+                  <p className="text-xs font-mono text-gold mb-4 uppercase tracking-wider font-semibold">{p.subtitle}</p>
                   
-                  <p className="text-sm text-gray-300 mb-6 leading-relaxed font-sans">{p.description}</p>
+                  <p className="text-sm text-slate-600 mb-6 leading-relaxed font-sans">{p.description}</p>
 
                   <div className="mb-6 flex flex-col gap-2.5">
                     {p.achievements.map((ach, id) => (
                       <div key={id} className="flex gap-2 text-sm leading-relaxed">
                         <span className="text-teal font-mono">▷</span>
-                        <span className="text-gray-300 font-sans">{ach}</span>
+                        <span className="text-slate-600 font-sans">{ach}</span>
                       </div>
                     ))}
                   </div>
@@ -1223,16 +1212,16 @@ export default function Home() {
                     {p.tech.map((t, id) => (
                       <span
                         key={id}
-                        className="px-2.5 py-1 rounded-md border border-white/5 bg-white/5 text-[11px] font-mono text-gray-400"
+                        className="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-[11px] font-mono text-slate-500"
                       >
                         {t}
                       </span>
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-5 border-t border-white/5 pt-4">
+                  <div className="flex items-center gap-5 border-t border-slate-100 pt-4">
                     {p.restricted ? (
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold font-mono">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold font-mono">
                         <Lock className="w-3.5 h-3.5" />
                         Restricted Access
                       </div>
@@ -1244,7 +1233,7 @@ export default function Home() {
                             target="_blank"
                             rel="noopener noreferrer"
                             data-testid={`link-${p.id}-source`}
-                            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white font-mono transition-colors font-medium"
+                            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 font-mono transition-colors font-semibold"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                             Source Code
@@ -1254,7 +1243,7 @@ export default function Home() {
                           <a
                             href={p.demoUrl}
                             data-testid={`link-${p.id}-demo`}
-                            className="inline-flex items-center gap-1.5 text-xs text-teal hover:text-teal/80 font-mono transition-colors font-semibold"
+                            className="inline-flex items-center gap-1.5 text-xs text-teal hover:text-teal/80 font-mono transition-colors font-bold"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                             Live Demo
@@ -1271,9 +1260,9 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.5 DIGITAL SERVICES (Stagger Upwards Scroll)
+          6.5 DIGITAL SERVICES (Light theme cards)
           ========================================== */}
-      <section id="services" className="bg-[#05080f] py-24 border-t border-white/5 relative z-20">
+      <section id="services" className="bg-slate-50/50 py-24 border-t border-slate-200/50 relative z-20">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div 
             initial="hidden"
@@ -1283,8 +1272,8 @@ export default function Home() {
             className="flex flex-col items-center text-center mb-16"
           >
             <h2 className="text-xs font-mono text-teal tracking-[0.25em] uppercase mb-4">Enterprise Capabilities</h2>
-            <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">Digital Services</h3>
-            <p className="text-gray-400 max-w-2xl leading-relaxed">
+            <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">Digital Services</h3>
+            <p className="text-slate-600 max-w-2xl leading-relaxed">
               We design, build, and deploy digital systems with a security-first posture, ensuring stability and performance at scale.
             </p>
           </motion.div>
@@ -1305,13 +1294,13 @@ export default function Home() {
                 whileInView="visible"
                 viewport={{ once: false, margin: "-60px" }}
                 variants={cardFadeUpVariants}
-                className="group p-8 rounded-2xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/45 transition-all duration-300"
+                className="group p-8 rounded-2xl border border-slate-200/50 bg-white/80 hover:border-teal/45 transition-all duration-300"
               >
                 <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
                   <srv.icon className="w-6 h-6" />
                 </div>
-                <h4 className="text-xl font-bold text-white mb-3">{srv.title}</h4>
-                <p className="text-sm text-gray-400 leading-relaxed font-sans">{srv.desc}</p>
+                <h4 className="text-xl font-bold text-slate-900 mb-3">{srv.title}</h4>
+                <p className="text-sm text-slate-500 leading-relaxed font-sans">{srv.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -1321,14 +1310,14 @@ export default function Home() {
       {/* ==========================================
           6.6 TECHNOLOGY STACK
           ========================================== */}
-      <section id="stack" className="relative bg-[#0F1626]/50 border-y border-white/5 py-16 z-20">
+      <section id="stack" className="relative bg-slate-100/50 border-y border-slate-200/50 py-16 z-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <motion.h2 
             initial="hidden"
             whileInView="visible"
             viewport={{ once: false, margin: "-100px" }}
             variants={revealHeaderVariants}
-            className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-10"
+            className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-10 font-bold"
           >
             Advanced System Toolkit
           </motion.h2>
@@ -1346,7 +1335,7 @@ export default function Home() {
             ].map((tech) => (
               <span
                 key={tech}
-                className="px-5 py-2.5 rounded-full border border-white/10 text-gray-300 bg-[#0F1626]/60 font-mono text-sm tracking-wide transition-colors hover:border-teal/40 hover:text-white"
+                className="px-5 py-2.5 rounded-full border border-slate-200 bg-white text-slate-600 font-mono text-sm tracking-wide transition-colors hover:border-teal/50 hover:text-slate-900"
               >
                 {tech}
               </span>
@@ -1364,21 +1353,21 @@ export default function Home() {
           whileInView="visible"
           viewport={{ once: false, margin: "-100px" }}
           variants={revealHeaderVariants}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-[#0F1626]/80 backdrop-blur-md rounded-2xl border border-white/5 p-8 md:p-12 shadow-2xl glow-blue items-center"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/50 p-8 md:p-12 shadow-xl glow-blue items-center"
         >
           <div className="lg:col-span-7">
             <div className="mb-8">
               <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-2">Instant Evaluation</h2>
-              <h3 className="text-2xl md:text-4xl font-extrabold text-white mb-3">Security Health Check</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <h3 className="text-2xl md:text-4xl font-extrabold text-slate-900 mb-3">Security Health Check</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
                 Evaluate your startup posture against standard threats. Toggle systems status below to feed real-time calculations into the core shield.
               </p>
             </div>
 
-            <div className="flex flex-col gap-4 border-t border-white/5 pt-6">
+            <div className="flex flex-col gap-4 border-t border-slate-100 pt-6">
               {questions.map((q, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-4 p-3.5 rounded-xl border border-white/5 bg-[#080C16]/40">
-                  <span className="text-xs md:text-sm text-gray-300 leading-relaxed">{q}</span>
+                <div key={idx} className="flex items-center justify-between gap-4 p-3.5 rounded-xl border border-slate-200/40 bg-slate-50/50">
+                  <span className="text-xs md:text-sm text-slate-700 leading-relaxed font-semibold">{q}</span>
                   <Switch
                     id={`switch-assessment-${idx}`}
                     checked={assessmentAnswers[idx]}
@@ -1389,22 +1378,22 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 border border-white/5 bg-[#080C16]/60 rounded-xl text-center">
+          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 border border-slate-200 bg-slate-50 rounded-xl text-center">
             <SecurityShield3D yesCount={yesCount} />
             
             <div className="flex flex-col items-center gap-1 mt-4">
-              <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">POSTURE INDEX</span>
+              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">POSTURE INDEX</span>
               <span className={`px-4 py-1.5 rounded-full border text-xs font-black tracking-widest uppercase font-mono mt-1 ${riskColor}`}>
                 {riskStatus}
               </span>
             </div>
 
-            <p className="text-xs text-gray-300 font-medium my-4 max-w-xs">{riskMessage}</p>
+            <p className="text-xs text-slate-600 font-medium my-4 max-w-xs">{riskMessage}</p>
 
             <button
               data-testid="btn-assessment-cta"
               onClick={() => handleNavClick('contact')}
-              className="w-full py-3 rounded-lg bg-gold hover:bg-gold/90 text-background font-bold text-xs tracking-wider transition-all shadow-md inline-flex items-center justify-center gap-2 hover:scale-[1.02] cursor-pointer"
+              className="w-full py-3 rounded-lg bg-gold hover:bg-gold/90 text-white font-bold text-xs tracking-wider transition-all shadow-md inline-flex items-center justify-center gap-2 hover:scale-[1.02] cursor-pointer"
             >
               Talk to a Security Expert
               <ArrowRight className="w-4 h-4" />
@@ -1416,7 +1405,7 @@ export default function Home() {
       {/* ==========================================
           6.8 ABOUT / VISION
           ========================================== */}
-      <section id="about" className="bg-[#05080f] py-24 border-t border-white/5 relative z-20">
+      <section id="about" className="bg-slate-50/50 py-24 border-t border-slate-200/50 relative z-20">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           <motion.div 
             initial="hidden"
@@ -1426,18 +1415,18 @@ export default function Home() {
             className="lg:col-span-7 flex flex-col items-start"
           >
             <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Startup Vision</h2>
-            <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">Sovereign-First Digital Architecture</h3>
-            <p className="text-gray-300 mb-6 leading-relaxed font-sans">
+            <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">Sovereign-First Digital Architecture</h3>
+            <p className="text-slate-700 mb-6 leading-relaxed font-sans">
               Founded in 2026, Paravion Technologies represents a critical pivot towards absolute digital sovereignty. We do not just build web apps or install security monitoring packages; we develop custom security operating components, blockchain anchors, and sandboxed AI structures that shield enterprises from systemic dependency and vulnerabilities.
             </p>
-            <p className="text-gray-400 text-sm leading-relaxed font-sans mb-8">
+            <p className="text-slate-500 text-sm leading-relaxed font-sans mb-8">
               Based in India, our mandate is to engineer credible, technical systems using modern toolchains. By infusing zero-trust verification rules at core system interfaces, we establish robust platforms capable of scaling while retaining absolute data privacy.
             </p>
           </motion.div>
 
           <div className="lg:col-span-5 flex flex-col gap-6 w-full">
             {[
-              { icon: BrainCircuit, color: "text-blue-400", border: "hover:border-blue-500/30", title: "AI-First Automation", desc: "Deep integration of Large Language Models (LLMs) and neural classifiers mapped directly to client environments." },
+              { icon: BrainCircuit, color: "text-blue-600", border: "hover:border-blue-500/30", title: "AI-First Automation", desc: "Deep integration of Large Language Models (LLMs) and neural classifiers mapped directly to client environments." },
               { icon: Shield, color: "text-teal", border: "hover:border-teal/30", title: "Zero-Trust Protocol", desc: "Systemic validation at every logical boundary, eliminating vulnerable assumptions in transaction processing pipelines." },
               { icon: LinkIcon, color: "text-gold", border: "hover:border-gold/30", title: "Blockchain-Anchored Logs", desc: "Cryptographic ledger hashes establishing immutable, verifiable histories of transactional and server actions." }
             ].map((p, idx) => (
@@ -1448,14 +1437,14 @@ export default function Home() {
                 whileInView="visible"
                 viewport={{ once: false, margin: "-60px" }}
                 variants={cardFadeUpVariants}
-                className={`flex gap-5 p-6 rounded-xl border border-white/5 bg-[#0F1626]/40 ${p.border} transition-all duration-300`}
+                className={`flex gap-5 p-6 rounded-xl border border-slate-200 bg-white/80 ${p.border} transition-all duration-300 shadow-sm`}
               >
                 <div className={`${p.color} mt-0.5`}>
                   <p.icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold text-white mb-1.5">{p.title}</h4>
-                  <p className="text-xs text-gray-400 leading-relaxed font-sans">{p.desc}</p>
+                  <h4 className="text-lg font-bold text-slate-900 mb-1.5">{p.title}</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed font-sans">{p.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -1476,27 +1465,27 @@ export default function Home() {
             className="lg:col-span-5 flex flex-col items-start justify-center"
           >
             <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Direct Connection</h2>
-            <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">Contact Us</h3>
-            <p className="text-gray-300 leading-relaxed mb-8">
+            <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">Contact Us</h3>
+            <p className="text-slate-700 leading-relaxed mb-8">
               Discuss enterprise integration, request audits for your products, or coordinate strategic project partnerships.
             </p>
 
-            <div className="flex flex-col gap-5 text-sm font-mono text-gray-300">
+            <div className="flex flex-col gap-5 text-sm font-mono text-slate-700">
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">WHATSAPP / PHONE</span>
-                <a href="https://wa.me/917011991268" target="_blank" rel="noopener noreferrer" className="text-white hover:text-teal font-bold transition-colors">
+                <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold">WHATSAPP / PHONE</span>
+                <a href="https://wa.me/917011991268" target="_blank" rel="noopener noreferrer" className="text-slate-900 hover:text-blue-600 font-bold transition-colors">
                   +91 7011991268
                 </a>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">EMAIL CORRESPONDENCE</span>
+                <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold">EMAIL CORRESPONDENCE</span>
                 <a href="mailto:paraviontechnologies@gmail.com" className="text-teal hover:underline font-bold transition-colors">
                   paraviontechnologies@gmail.com
                 </a>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">HEADQUARTERS</span>
-                <span className="text-white">New Delhi, India</span>
+                <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold">HEADQUARTERS</span>
+                <span className="text-slate-900 font-bold">New Delhi, India</span>
               </div>
             </div>
           </motion.div>
@@ -1506,52 +1495,52 @@ export default function Home() {
             whileInView="visible"
             viewport={{ once: false, margin: "-80px" }}
             variants={cardRightVariants}
-            className="lg:col-span-7 bg-[#0F1626] border border-white/5 p-8 rounded-2xl shadow-2xl"
+            className="lg:col-span-7 bg-white border border-slate-200/80 p-8 rounded-2xl shadow-xl"
           >
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">FULL NAME</label>
+                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">FULL NAME</label>
                 <input
                   type="text"
                   data-testid="input-name"
                   {...register('name')}
                   placeholder="e.g. Vikram Sharma"
-                  className="w-full bg-[#080C16] border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
                 />
                 {errors.name && <p className="text-xs text-red-500 font-medium">{errors.name.message}</p>}
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">EMAIL ADDRESS</label>
+                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">EMAIL ADDRESS</label>
                 <input
                   type="email"
                   data-testid="input-email"
                   {...register('email')}
                   placeholder="e.g. v.sharma@enterprise.com"
-                  className="w-full bg-[#080C16] border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
                 />
                 {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>}
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">PHONE NUMBER</label>
+                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">PHONE NUMBER</label>
                 <input
                   type="tel"
                   data-testid="input-phone"
                   {...register('phone')}
                   placeholder="e.g. +91 99999 88888"
-                  className="w-full bg-[#080C16] border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
                 />
                 {errors.phone && <p className="text-xs text-red-500 font-medium">{errors.phone.message}</p>}
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">INQUIRY TYPE</label>
+                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">INQUIRY TYPE</label>
                 <div className="relative">
                   <select
                     data-testid="select-inquiry"
                     {...register('inquiryType')}
-                    className="w-full appearance-none bg-[#080C16] border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors pr-10"
+                    className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors pr-10"
                   >
                     <option value="">-- Select Inquiry Type --</option>
                     <option value="Cybersecurity Product">Cybersecurity Product</option>
@@ -1559,19 +1548,19 @@ export default function Home() {
                     <option value="Partnership">Partnership</option>
                     <option value="Other">Other</option>
                   </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                 </div>
                 {errors.inquiryType && <p className="text-xs text-red-500 font-medium">{errors.inquiryType.message}</p>}
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">MESSAGE DESCRIPTION</label>
+                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">MESSAGE DESCRIPTION</label>
                 <textarea
                   data-testid="input-message"
                   {...register('message')}
                   rows={4}
                   placeholder="Describe your security details or product goals in detail..."
-                  className="w-full bg-[#080C16] border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors resize-none"
                 />
                 {errors.message && <p className="text-xs text-red-500 font-medium">{errors.message.message}</p>}
               </div>
@@ -1579,7 +1568,7 @@ export default function Home() {
               <button
                 type="submit"
                 data-testid="btn-submit-contact"
-                className="w-full py-4 rounded-xl bg-gold hover:bg-gold/90 text-background font-bold text-sm tracking-wide transition-all shadow-lg hover:scale-[1.01] active:scale-95 cursor-pointer"
+                className="w-full py-4 rounded-xl bg-gold hover:bg-gold/90 text-white font-bold text-sm tracking-wide transition-all shadow-lg hover:scale-[1.01] active:scale-95 cursor-pointer"
               >
                 Send Message →
               </button>
@@ -1589,47 +1578,47 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.10 FOOTER (3-column layout)
+          6.10 FOOTER (3-column layout - Slate/Dark theme contrast)
           ========================================== */}
-      <footer className="bg-[#05080f] border-t border-white/5 py-16 relative z-20">
+      <footer className="bg-slate-900 text-white border-t border-slate-800 py-16 relative z-20">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-left mb-12">
           <div className="flex flex-col items-start gap-4">
             <div className="flex items-center gap-3">
               <svg className="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#hexGrad)" />
-                <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#05080f" />
+                <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#0f172a" />
                 <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#hexGrad)" />
               </svg>
               <span className="text-white font-extrabold tracking-wider font-sans text-lg">
                 PARAVION TECHNOLOGIES
               </span>
             </div>
-            <p className="text-xs text-gray-500 leading-relaxed font-sans max-w-xs">
+            <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xs">
               Think Big. Build Secure. Grow Digital. Dedicated to Sovereign-First AI infrastructure and digital product engineering.
             </p>
           </div>
 
           <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">NAVIGATION</span>
-            <button data-testid="footer-products" onClick={() => handleNavClick('products')} className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">Products</button>
-            <button data-testid="footer-services" onClick={() => handleNavClick('services')} className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">Services</button>
-            <button data-testid="footer-about" onClick={() => handleNavClick('about')} className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">About</button>
-            <button data-testid="footer-contact" onClick={() => handleNavClick('contact')} className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">Contact</button>
+            <button data-testid="footer-products" onClick={() => handleNavClick('products')} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer">Products</button>
+            <button data-testid="footer-services" onClick={() => handleNavClick('services')} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer">Services</button>
+            <button data-testid="footer-about" onClick={() => handleNavClick('about')} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer">About</button>
+            <button data-testid="footer-contact" onClick={() => handleNavClick('contact')} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer">Contact</button>
           </div>
 
           <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">COMMUNICATION</span>
-            <span className="text-sm text-gray-400 font-mono">+91 7011991268</span>
+            <span className="text-sm text-slate-400 font-mono">+91 7011991268</span>
             <span className="text-sm text-teal font-mono">paraviontechnologies@gmail.com</span>
-            <span className="text-sm text-gray-500 font-sans">New Delhi, India</span>
+            <span className="text-sm text-slate-400 font-sans">New Delhi, India</span>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-500 font-sans">
+        <div className="max-w-7xl mx-auto px-6 border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-slate-500 font-sans">
             © 2026 Paravion Technologies. All Rights Reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs font-mono text-gray-500">
+          <div className="flex items-center gap-4 text-xs font-mono text-slate-500">
             <span>Sovereign-First Philosophy</span>
             <span>·</span>
             <span className="flex items-center gap-1.5 animate-pulse">
