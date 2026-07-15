@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import * as THREE from 'three';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,100 +27,295 @@ import { useToast } from '../components/ui/toast';
 import { Switch } from '../components/ui/switch';
 
 // ==========================================
-// 1. HERO CANVAS PARTICLE MESH BACKGROUND
+// 1. THREE.JS 3D CYBER SKY ANIMATION
 // ==========================================
-const HeroCanvas: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+interface ThreeDBackgroundProps {
+  mousePos: { x: number; y: number };
+}
+
+const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mouseRef = useRef(mousePos);
+
+  // Sync mouse position
+  useEffect(() => {
+    mouseRef.current = mousePos;
+  }, [mousePos]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let width = container.clientWidth;
+    let height = container.clientHeight;
 
+    // 1. Scene, Camera, Renderer
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x080c16, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+    camera.position.set(0, 2, 15);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // 2. Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0x00d4aa, 1.2);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
+
+    const pointLight = new THREE.PointLight(0x2563eb, 2, 50);
+    pointLight.position.set(0, 0, 5);
+    scene.add(pointLight);
+
+    // 3. Cyber Starfield / Nodes
+    const starsCount = 200;
+    const starsGeom = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(starsCount * 3);
+    const starColors = new Float32Array(starsCount * 3);
+
+    for (let i = 0; i < starsCount; i++) {
+      starPositions[i * 3] = (Math.random() - 0.5) * 80;
+      starPositions[i * 3 + 1] = (Math.random() - 0.5) * 50 + 2;
+      starPositions[i * 3 + 2] = -Math.random() * 60; // fly forward
+
+      // Teal to blue gradient points
+      const isTeal = Math.random() > 0.5;
+      starColors[i * 3] = isTeal ? 0.0 : 0.14;
+      starColors[i * 3 + 1] = isTeal ? 0.83 : 0.38;
+      starColors[i * 3 + 2] = isTeal ? 0.66 : 0.92;
+    }
+
+    starsGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    starsGeom.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+    const starMat = new THREE.PointsMaterial({
+      size: 0.4,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.8
+    });
+    const starField = new THREE.Points(starsGeom, starMat);
+    scene.add(starField);
+
+    // 4. Scrolling Digital Grid Plane
+    const gridHelper = new THREE.GridHelper(120, 40, 0x2563eb, 0x131b2e);
+    gridHelper.position.y = -3;
+    scene.add(gridHelper);
+
+    // 5. 3D Wireframe Jet Plane
+    const jetGroup = new THREE.Group();
+    const jetMat = new THREE.MeshBasicMaterial({
+      color: 0x00d4aa,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.7
+    });
+
+    // Fuselage
+    const fuselageGeom = new THREE.CylinderGeometry(0.1, 0.8, 8, 5);
+    fuselageGeom.rotateX(Math.PI / 2);
+    const fuselage = new THREE.Mesh(fuselageGeom, jetMat);
+    jetGroup.add(fuselage);
+
+    // Nose
+    const noseGeom = new THREE.ConeGeometry(0.8, 2.5, 5);
+    noseGeom.rotateX(Math.PI / 2);
+    const nose = new THREE.Mesh(noseGeom, jetMat);
+    nose.position.z = 5.25;
+    jetGroup.add(nose);
+
+    // Left Wing
+    const wingLeftGeom = new THREE.ConeGeometry(2.5, 5, 3);
+    wingLeftGeom.rotateZ(Math.PI / 2);
+    wingLeftGeom.scale(1, 0.05, 1);
+    const wingLeft = new THREE.Mesh(wingLeftGeom, jetMat);
+    wingLeft.position.set(-2, 0, -0.5);
+    jetGroup.add(wingLeft);
+
+    // Right Wing
+    const wingRightGeom = new THREE.ConeGeometry(2.5, 5, 3);
+    wingRightGeom.rotateZ(-Math.PI / 2);
+    wingRightGeom.scale(1, 0.05, 1);
+    const wingRight = new THREE.Mesh(wingRightGeom, jetMat);
+    wingRight.position.set(2, 0, -0.5);
+    jetGroup.add(wingRight);
+
+    // Vertical Fin (tail)
+    const finGeom = new THREE.ConeGeometry(0.6, 1.5, 3);
+    finGeom.rotateX(-Math.PI / 4);
+    finGeom.scale(0.05, 1, 1);
+    const fin = new THREE.Mesh(finGeom, jetMat);
+    fin.position.set(0, 0.8, -3.5);
+    jetGroup.add(fin);
+
+    scene.add(jetGroup);
+
+    // Position plane in front of camera
+    jetGroup.position.set(0, 0, 5);
+
+    // 6. Animation Loop
+    let clock = new THREE.Clock();
+    let animId: number;
+
+    const animate = () => {
+      animId = requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      // Scroll grid to simulate forward flight
+      gridHelper.position.z += delta * 12;
+      if (gridHelper.position.z > 6) {
+        gridHelper.position.z = 0;
+      }
+
+      // Fly stars closer
+      const positions = starsGeom.attributes.position.array as Float32Array;
+      for (let i = 0; i < starsCount; i++) {
+        positions[i * 3 + 2] += delta * 18;
+        if (positions[i * 3 + 2] > 10) {
+          positions[i * 3 + 2] = -60;
+          positions[i * 3] = (Math.random() - 0.5) * 80;
+          positions[i * 3 + 1] = (Math.random() - 0.5) * 50 + 2;
+        }
+      }
+      starsGeom.attributes.position.needsUpdate = true;
+
+      // Make jet hover subtly
+      const elapsed = clock.getElapsedTime();
+      jetGroup.position.y = Math.sin(elapsed * 2.5) * 0.15;
+
+      // Parallax Tilt based on Mouse input
+      const targetRX = mouseRef.current.y * 0.25;
+      const targetRY = -mouseRef.current.x * 0.35;
+      const targetRZ = -mouseRef.current.x * 0.15; // bank roll
+
+      jetGroup.rotation.x = THREE.MathUtils.lerp(jetGroup.rotation.x, targetRX, 0.08);
+      jetGroup.rotation.y = THREE.MathUtils.lerp(jetGroup.rotation.y, targetRY, 0.08);
+      jetGroup.rotation.z = THREE.MathUtils.lerp(jetGroup.rotation.z, targetRZ, 0.08);
+
+      // Tilts camera slightly
+      camera.position.x = THREE.MathUtils.lerp(camera.position.x, mouseRef.current.x * 1.5, 0.05);
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, 2 + mouseRef.current.y * 1.0, 0.05);
+      camera.lookAt(0, 0.5, 0);
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    // 7. Resize handler
     const handleResize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      if (!containerRef.current) return;
+      width = containerRef.current.clientWidth;
+      height = containerRef.current.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
     };
     window.addEventListener('resize', handleResize);
 
-    const particlesCount = 80;
-    const particles: Array<{
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      radius: number;
-    }> = [];
-
-    for (let i = 0; i < particlesCount; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.4, // subtle drift
-        vy: (Math.random() - 0.5) * 0.4,
-        radius: Math.random() * 2 + 1,
-      });
-    }
-
-    const animate = () => {
-      ctx.fillStyle = '#080C16';
-      ctx.fillRect(0, 0, width, height);
-
-      // Connect particles
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < particlesCount; i++) {
-        const p1 = particles[i];
-        p1.x += p1.vx;
-        p1.y += p1.vy;
-
-        // Boundaries bounce
-        if (p1.x < 0 || p1.x > width) p1.vx *= -1;
-        if (p1.y < 0 || p1.y > height) p1.vy *= -1;
-
-        for (let j = i + 1; j < particlesCount; j++) {
-          const p2 = particles[j];
-          const dx = p1.x - p2.x;
-          const dy = p1.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < 150) {
-            ctx.strokeStyle = `rgba(0, 212, 170, ${0.12 * (1 - dist / 150)})`;
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
-          }
-        }
-
-        // Draw node
-        ctx.fillStyle = 'rgba(0, 212, 170, 0.6)';
-        ctx.beginPath();
-        ctx.arc(p1.x, p1.y, p1.radius, 0, Math.PI * 2);
-        ctx.fill();
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animId);
+      if (container && renderer.domElement) {
+        container.removeChild(renderer.domElement);
       }
+      scene.clear();
+    };
+  }, []);
 
-      animationFrameId = requestAnimationFrame(animate);
+  return <div ref={containerRef} className="absolute inset-0 w-full h-full" />;
+};
+
+// ==========================================
+// 2. STATS BAR: ROTATING NODAL GLOBE (Three.js)
+// ==========================================
+const StatGlobe3D: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(containerRef, { once: true });
+
+  useEffect(() => {
+    if (!isInView) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const width = 80;
+    const height = 80;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+    camera.position.z = 4.5;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // Wireframe Globe
+    const globeGeom = new THREE.SphereGeometry(1.6, 12, 12);
+    const globeMat = new THREE.MeshBasicMaterial({
+      color: 0x00d4aa,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.35
+    });
+    const globe = new THREE.Mesh(globeGeom, globeMat);
+    scene.add(globe);
+
+    // Glowing Nodes
+    const pointsMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.12,
+      transparent: true,
+      opacity: 0.8
+    });
+    const points = new THREE.Points(globeGeom, pointsMat);
+    scene.add(points);
+
+    // Secondary Orbit Ring
+    const ringGeom = new THREE.RingGeometry(2.0, 2.05, 24);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x2563eb,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.6
+    });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.rotation.x = Math.PI / 3;
+    scene.add(ring);
+
+    let animId: number;
+    const animate = () => {
+      animId = requestAnimationFrame(animate);
+      globe.rotation.y += 0.005;
+      globe.rotation.x += 0.002;
+      points.rotation.y += 0.005;
+      points.rotation.x += 0.002;
+      ring.rotation.z -= 0.008;
+      renderer.render(scene, camera);
     };
 
     animate();
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
+      cancelAnimationFrame(animId);
+      if (container && renderer.domElement) {
+        container.removeChild(renderer.domElement);
+      }
+      scene.clear();
     };
-  }, []);
+  }, [isInView]);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />;
+  return <div ref={containerRef} className="w-20 h-20 flex items-center justify-center pointer-events-none" />;
 };
 
 // ==========================================
-// 2. STATS BAR ANIMATED COUNTER
+// 2.5 STATS BAR ANIMATED COUNTER
 // ==========================================
 interface CounterProps {
   value: number;
@@ -168,7 +364,137 @@ const AnimatedCounter: React.FC<CounterProps> = ({ value, prefix = '', suffix = 
 };
 
 // ==========================================
-// 3. PRODUCTS DATA ARRAY
+// 3. HEALTH CHECK: PULSING SECURITY CORE SHIELD (Three.js)
+// ==========================================
+interface SecurityShield3DProps {
+  yesCount: number;
+}
+
+const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const coreRef = useRef<THREE.Mesh | null>(null);
+  const ringRef = useRef<THREE.Mesh | null>(null);
+
+  // Dynamically update colors & pulse based on security level
+  useEffect(() => {
+    if (!coreRef.current || !ringRef.current) return;
+    
+    let colorHex = 0xef4444; // high risk (0-1)
+    if (yesCount >= 4) {
+      colorHex = 0x00d4aa; // low risk
+    } else if (yesCount >= 2) {
+      colorHex = 0xf5a623; // medium risk
+    }
+
+    const material = coreRef.current.material as THREE.MeshBasicMaterial;
+    material.color.setHex(colorHex);
+
+    const ringMat = ringRef.current.material as THREE.MeshBasicMaterial;
+    ringMat.color.setHex(colorHex);
+  }, [yesCount]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // Security Core Shape (Wireframe Icosahedron representing system core)
+    const coreGeom = new THREE.IcosahedronGeometry(1.5, 1);
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: 0xef4444,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.6
+    });
+    const core = new THREE.Mesh(coreGeom, coreMat);
+    scene.add(core);
+    coreRef.current = core;
+
+    // Glowing vertices
+    const pointsMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.1,
+      transparent: true,
+      opacity: 0.8
+    });
+    const points = new THREE.Points(coreGeom, pointsMat);
+    scene.add(points);
+
+    // Orbit shielding ring
+    const ringGeom = new THREE.TorusGeometry(2.1, 0.03, 8, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xef4444,
+      transparent: true,
+      opacity: 0.4
+    });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.rotation.x = Math.PI / 4;
+    scene.add(ring);
+    ringRef.current = ring;
+
+    let animId: number;
+    let clock = new THREE.Clock();
+
+    const animate = () => {
+      animId = requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      // Dynamic rotation speed based on posture risk
+      let speedFactor = 2.5; // High risk (fast rotation)
+      if (yesCount >= 4) speedFactor = 0.6; // Low risk (slow rotation)
+      else if (yesCount >= 2) speedFactor = 1.4; // Medium risk
+
+      core.rotation.y += 0.005 * speedFactor;
+      core.rotation.x += 0.003 * speedFactor;
+      points.rotation.copy(core.rotation);
+      ring.rotation.z -= 0.003 * speedFactor;
+
+      // Pulse scaling
+      const pulse = 1.0 + Math.sin(elapsed * (speedFactor * 2)) * 0.08;
+      core.scale.set(pulse, pulse, pulse);
+      points.scale.set(pulse, pulse, pulse);
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const w = containerRef.current.clientWidth;
+      const h = containerRef.current.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animId);
+      if (container && renderer.domElement) {
+        container.removeChild(renderer.domElement);
+      }
+      scene.clear();
+    };
+  }, []);
+
+  return <div ref={containerRef} className="w-full h-64 flex items-center justify-center" />;
+};
+
+// ==========================================
+// 4. PRODUCTS DATA ARRAY
 // ==========================================
 interface Product {
   id: string;
@@ -296,7 +622,7 @@ const products: Product[] = [
 ];
 
 // ==========================================
-// 4. CONTACT FORM ZOD RESOLVER
+// 5. CONTACT FORM SCHEMA
 // ==========================================
 const contactSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -309,13 +635,16 @@ const contactSchema = z.object({
 type ContactFormInputs = z.infer<typeof contactSchema>;
 
 // ==========================================
-// 5. MAIN HOME PAGE COMPONENT
+// 6. MAIN HOME PAGE COMPONENT
 // ==========================================
 export default function Home() {
   const { toast } = useToast();
   const [filter, setFilter] = useState<'All' | 'Deployed' | 'Prototype'>('All');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
+
+  // Parallax Mouse tracking state
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Security Health Check State
   const [assessmentAnswers, setAssessmentAnswers] = useState<boolean[]>([false, false, false, false, false]);
@@ -344,7 +673,14 @@ export default function Home() {
     riskMessage = "Significant gaps remain. Let's fix them.";
   }
 
-  // Live Visitor Counter (CounterAPI hook)
+  // Mouse move handler for Parallax effects
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const x = (e.clientX / window.innerWidth) * 2 - 1;
+    const y = -(e.clientY / window.innerHeight) * 2 + 1;
+    setMousePos({ x, y });
+  };
+
+  // Live Visitor Counter
   useEffect(() => {
     fetch('https://api.counterapi.dev/v1/paravion-technologies/visits/up')
       .then((res) => res.json())
@@ -355,7 +691,6 @@ export default function Home() {
       })
       .catch((err) => {
         console.error("CounterAPI fetch error, falling back to local simulation", err);
-        // Local simulation fallback
         const simulated = localStorage.getItem('sim_visits') 
           ? parseInt(localStorage.getItem('sim_visits')!) + 1 
           : 12450;
@@ -364,7 +699,6 @@ export default function Home() {
       });
   }, []);
 
-  // Form submit handler
   const {
     register,
     handleSubmit,
@@ -382,7 +716,7 @@ export default function Home() {
   });
 
   const onSubmit = (data: ContactFormInputs) => {
-    console.log("Contact submission:", data);
+    console.log("Contact form submitted:", data);
     toast("Message Sent Successfully — We will get back to you shortly.", "success");
     reset();
   };
@@ -408,14 +742,16 @@ export default function Home() {
   );
 
   return (
-    <div className="relative min-h-screen bg-[#080C16] text-[#F0F4FF] overflow-x-hidden">
+    <div 
+      onMouseMove={handleMouseMove}
+      className="relative min-h-screen bg-[#080C16] text-[#F0F4FF] overflow-x-hidden"
+    >
       {/* ==========================================
           6.1 NAVBAR (Fixed Glassmorphic Header)
           ========================================== */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#080C16]/80 backdrop-blur-md border-b border-white/5 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavClick('home')}>
-            {/* Hexagon Logo */}
             <svg className="w-9 h-9" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -432,7 +768,6 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-8">
             <button data-testid="nav-home" onClick={() => handleNavClick('home')} className="text-sm font-medium hover:text-teal transition-colors">Home</button>
             <button data-testid="nav-products" onClick={() => handleNavClick('products')} className="text-sm font-medium hover:text-teal transition-colors">Products</button>
@@ -457,7 +792,6 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Mobile menu trigger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-lg hover:bg-white/5 text-white transition-colors"
@@ -466,7 +800,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Mobile dropdown */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -501,48 +834,60 @@ export default function Home() {
       </nav>
 
       {/* ==========================================
-          6.2 HERO (Interactive Particle background)
+          6.2 HERO (Immersive Airplane Window Background)
           ========================================== */}
-      <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-        <HeroCanvas />
+      <section id="home" className="relative min-h-screen w-full flex items-center pt-20 overflow-hidden">
+        
+        {/* Full-Screen Passenger Window Frame Mask (mimics user reference image) */}
+        <div className="absolute inset-0 z-0 bg-[#080C16] flex items-center justify-center pointer-events-none p-4 md:p-10 select-none">
+          {/* Cabin Wall Shadow Background */}
+          <div className="absolute inset-0 bg-[#0f1524] opacity-95" />
+          
+          {/* Airplane Window Cutout */}
+          <div className="absolute inset-[3%] md:inset-[6%_12%] rounded-[40px] md:rounded-[80px_80px_80px_80px_/_120px_120px_120px_120px] airplane-window-bezel pointer-events-auto overflow-hidden">
+            
+            {/* Direct WebGL Interactive Scene */}
+            <ThreeDBackground mousePos={mousePos} />
+            
+            {/* Dynamic CSS Glass glare reflections */}
+            <div className="absolute inset-0 airplane-glass-shimmer mix-blend-screen opacity-70 z-10" />
+            
+            {/* Beveled Passenger Window Shadow overlay for physical 3D depth */}
+            <div className="absolute inset-0 airplane-window-inner-shadow z-10" />
+          </div>
+        </div>
 
-        {/* Gradient Bottom Fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#080C16] to-transparent pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center py-12">
-          <div className="lg:col-span-8 flex flex-col items-start text-left">
-            {/* Tag badge */}
+        {/* Hero floating contents in front of the window */}
+        <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center py-16">
+          <div className="lg:col-span-8 flex flex-col items-start text-left bg-[#080C16]/50 backdrop-blur-sm p-8 rounded-2xl border border-white/5 shadow-2xl">
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="mb-6 px-4 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-teal text-xs font-mono tracking-widest uppercase font-semibold"
+              className="mb-5 px-4 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-teal text-xs font-mono tracking-widest uppercase font-semibold"
             >
               Indian Cyber Sovereignty // 2026
             </motion.div>
 
-            {/* Headline */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6 leading-[1.1] font-sans"
+              className="text-4xl md:text-7xl font-extrabold tracking-tight text-white mb-6 leading-[1.1] font-sans"
             >
               Defend. Develop.<br />
               <span className="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">Dominate.</span>
             </motion.h1>
 
-            {/* Subheadline */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg md:text-xl text-gray-300 max-w-2xl mb-10 leading-relaxed font-sans"
+              className="text-base md:text-lg text-gray-300 max-w-2xl mb-10 leading-relaxed font-sans"
             >
               Paravion Technologies builds AI-powered cybersecurity systems and enterprise digital products that protect and scale modern businesses.
             </motion.p>
 
-            {/* CTAs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -569,38 +914,44 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.3 STATS BAR (6-column counters)
+          6.3 STATS BAR (6-column counters + 3D Globe)
           ========================================== */}
-      <section className="relative bg-[#0F1626] border-y border-white/5 py-10 z-20">
+      <section className="relative bg-[#0F1626] border-y border-white/5 py-12 z-20">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-center">
-            {/* Stat 1 */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-center items-center">
+            {/* Stat 1 with Globe */}
             <div className="flex flex-col gap-1 items-center">
+              <StatGlobe3D />
               <AnimatedCounter value={14.4} suffix="M+" decimals={1} />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Nodal Points Secured</span>
             </div>
             {/* Stat 2 */}
             <div className="flex flex-col gap-1 items-center">
+              <div className="h-20 w-20 flex items-center justify-center text-teal font-mono text-xl border border-teal/15 bg-teal/5 rounded-full mb-2">14ms</div>
               <AnimatedCounter value={14} suffix="ms" />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">UBS Engine Latency</span>
             </div>
             {/* Stat 3 */}
             <div className="flex flex-col gap-1 items-center">
+              <div className="h-20 w-20 flex items-center justify-center text-blue-500 font-mono text-xl border border-blue-500/15 bg-blue-500/5 rounded-full mb-2">₹40B</div>
               <AnimatedCounter value={40} prefix="INR " suffix="B+" />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Fraud Prevented</span>
             </div>
             {/* Stat 4 */}
             <div className="flex flex-col gap-1 items-center">
+              <div className="h-20 w-20 flex items-center justify-center text-gold font-mono text-xl border border-gold/15 bg-gold/5 rounded-full mb-2">PAT</div>
               <AnimatedCounter value={8} />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Core Patents Pending</span>
             </div>
             {/* Stat 5 */}
             <div className="flex flex-col gap-1 items-center">
+              <div className="h-20 w-20 flex items-center justify-center text-white/50 font-mono text-xl border border-white/5 bg-white/5 rounded-full mb-2">2026</div>
               <AnimatedCounter value={5} />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Products Built in 2026</span>
             </div>
             {/* Stat 6 */}
             <div className="flex flex-col gap-1 items-center">
+              <div className="h-20 w-20 flex items-center justify-center text-green-400 font-mono text-xl border border-green-500/15 bg-green-500/5 rounded-full mb-2">LIVE</div>
               <AnimatedCounter value={1} />
               <span className="text-xs text-gray-400 font-mono tracking-wider uppercase mt-1">Live Deployments</span>
             </div>
@@ -619,7 +970,6 @@ export default function Home() {
             From deployed enterprise platforms to advanced cybersecurity prototypes — every product is real, technical, and solving a critical problem.
           </p>
 
-          {/* Filter Tabs */}
           <div className="flex bg-[#0F1626] border border-white/5 p-1 rounded-full mt-10">
             <button
               data-testid="filter-all"
@@ -651,7 +1001,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Product Cards Layout Grid */}
         <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <AnimatePresence mode="popLayout">
             {filteredProducts.map((p) => (
@@ -666,7 +1015,6 @@ export default function Home() {
                 className="group relative flex flex-col justify-between p-8 rounded-2xl border border-white/5 bg-[#0F1626]/80 hover:border-teal/30 hover:glow-teal transition-all duration-300"
               >
                 <div>
-                  {/* Top line metadata */}
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-xs font-mono text-gold tracking-widest font-semibold uppercase">PARAVION TECH</span>
                     <span
@@ -680,21 +1028,17 @@ export default function Home() {
                     </span>
                   </div>
 
-                  {/* Callout box if exists */}
                   {p.callout && (
                     <div className="mb-4 p-3 rounded-lg border border-teal/15 bg-teal/5 text-teal text-xs italic font-medium leading-relaxed">
                       {p.callout}
                     </div>
                   )}
 
-                  {/* Title & subtitle */}
                   <h4 className="text-2xl font-extrabold text-white mb-1 group-hover:text-teal transition-colors">{p.name}</h4>
                   <p className="text-xs font-mono text-gold mb-4 uppercase tracking-wider">{p.subtitle}</p>
                   
-                  {/* Description */}
                   <p className="text-sm text-gray-300 mb-6 leading-relaxed font-sans">{p.description}</p>
 
-                  {/* Achievements List */}
                   <div className="mb-6 flex flex-col gap-2.5">
                     {p.achievements.map((ach, idx) => (
                       <div key={idx} className="flex gap-2 text-sm leading-relaxed">
@@ -706,7 +1050,6 @@ export default function Home() {
                 </div>
 
                 <div>
-                  {/* Tech stack pills */}
                   <div className="flex flex-wrap gap-2 mb-6">
                     {p.tech.map((t, idx) => (
                       <span
@@ -718,7 +1061,6 @@ export default function Home() {
                     ))}
                   </div>
 
-                  {/* Links Row */}
                   <div className="flex items-center gap-5 border-t border-white/5 pt-4">
                     {p.restricted ? (
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold font-mono">
@@ -773,7 +1115,6 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Service 1 */}
             <motion.div
               whileInView={{ opacity: 1, y: 0 }}
               initial={{ opacity: 0, y: 20 }}
@@ -789,7 +1130,6 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Service 2 */}
             <motion.div
               whileInView={{ opacity: 1, y: 0 }}
               initial={{ opacity: 0, y: 20 }}
@@ -806,7 +1146,6 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Service 3 */}
             <motion.div
               whileInView={{ opacity: 1, y: 0 }}
               initial={{ opacity: 0, y: 20 }}
@@ -823,7 +1162,6 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Service 4 */}
             <motion.div
               whileInView={{ opacity: 1, y: 0 }}
               initial={{ opacity: 0, y: 20 }}
@@ -839,7 +1177,6 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Service 5 */}
             <motion.div
               whileInView={{ opacity: 1, y: 0 }}
               initial={{ opacity: 0, y: 20 }}
@@ -856,7 +1193,6 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Service 6 */}
             <motion.div
               whileInView={{ opacity: 1, y: 0 }}
               initial={{ opacity: 0, y: 20 }}
@@ -900,47 +1236,54 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.7 SECURITY HEALTH CHECK (Interactive widget)
+          6.7 SECURITY HEALTH CHECK (Interactive widget + 3D Shield)
           ========================================== */}
-      <section id="assessment" className="py-24 max-w-4xl mx-auto px-6 z-20 relative">
-        <div className="bg-[#0F1626]/80 backdrop-blur-md rounded-2xl border border-white/5 p-8 md:p-12 shadow-2xl glow-blue">
-          <div className="text-center mb-10">
-            <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-3">Instant Evaluation</h2>
-            <h3 className="text-2xl md:text-4xl font-extrabold text-white mb-4">Security Health Check</h3>
-            <p className="text-gray-400 text-sm max-w-xl mx-auto">
-              Evaluate your startup posture against standard threats. Answer the questions below to calculate your risk exposure index.
-            </p>
+      <section id="assessment" className="py-24 max-w-6xl mx-auto px-6 z-20 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-[#0F1626]/80 backdrop-blur-md rounded-2xl border border-white/5 p-8 md:p-12 shadow-2xl glow-blue items-center">
+          
+          {/* Question fields */}
+          <div className="lg:col-span-7">
+            <div className="mb-8">
+              <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-2">Instant Evaluation</h2>
+              <h3 className="text-2xl md:text-4xl font-extrabold text-white mb-3">Security Health Check</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Evaluate your startup posture against standard threats. Toggle systems status below to feed real-time calculations into the core shield.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4 border-t border-white/5 pt-6">
+              {questions.map((q, idx) => (
+                <div key={idx} className="flex items-center justify-between gap-4 p-3.5 rounded-xl border border-white/5 bg-[#080C16]/40">
+                  <span className="text-xs md:text-sm text-gray-300 leading-relaxed">{q}</span>
+                  <Switch
+                    id={`switch-assessment-${idx}`}
+                    checked={assessmentAnswers[idx]}
+                    onCheckedChange={() => toggleAssessment(idx)}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Toggle Switches */}
-          <div className="flex flex-col gap-6 mb-10 border-t border-white/5 pt-8">
-            {questions.map((q, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-4 p-4 rounded-xl border border-white/5 bg-[#080C16]/40">
-                <span className="text-sm md:text-base text-gray-300 leading-relaxed">{q}</span>
-                <Switch
-                  id={`switch-assessment-${idx}`}
-                  checked={assessmentAnswers[idx]}
-                  onCheckedChange={() => toggleAssessment(idx)}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Live calculation result box */}
-          <div className="p-6 rounded-xl border border-white/5 bg-[#080C16]/80 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col items-center md:items-start text-center md:text-left gap-1">
-              <span className="text-xs font-mono text-gray-400 uppercase tracking-widest">CALCULATED RISK LEVEL</span>
+          {/* 3D Shield Pulse and calculate readout */}
+          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 border border-white/5 bg-[#080C16]/60 rounded-xl text-center">
+            
+            {/* Glowing 3D WebGL Shield component */}
+            <SecurityShield3D yesCount={yesCount} />
+            
+            <div className="flex flex-col items-center gap-1 mt-4">
+              <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">POSTURE INDEX</span>
               <span className={`px-4 py-1.5 rounded-full border text-xs font-black tracking-widest uppercase font-mono mt-1 ${riskColor}`}>
                 {riskStatus}
               </span>
             </div>
 
-            <p className="text-sm text-gray-300 font-medium text-center md:text-left max-w-xs">{riskMessage}</p>
+            <p className="text-xs text-gray-300 font-medium my-4 max-w-xs">{riskMessage}</p>
 
             <button
               data-testid="btn-assessment-cta"
               onClick={() => handleNavClick('contact')}
-              className="px-6 py-3 rounded-lg bg-gold hover:bg-gold/90 text-background font-bold text-sm tracking-wide transition-all shadow-md inline-flex items-center gap-2 hover:scale-[1.03]"
+              className="w-full py-3 rounded-lg bg-gold hover:bg-gold/90 text-background font-bold text-xs tracking-wider transition-all shadow-md inline-flex items-center justify-center gap-2 hover:scale-[1.02]"
             >
               Talk to a Security Expert
               <ArrowRight className="w-4 h-4" />
@@ -966,7 +1309,6 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-5 flex flex-col gap-6 w-full">
-            {/* Pillar 1 */}
             <div className="flex gap-5 p-6 rounded-xl border border-white/5 bg-[#0F1626]/40 hover:border-blue-500/30 transition-all">
               <div className="text-blue-400 mt-0.5">
                 <BrainCircuit className="w-6 h-6" />
@@ -979,7 +1321,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Pillar 2 */}
             <div className="flex gap-5 p-6 rounded-xl border border-white/5 bg-[#0F1626]/40 hover:border-teal/30 transition-all">
               <div className="text-teal mt-0.5">
                 <Shield className="w-6 h-6" />
@@ -992,7 +1333,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Pillar 3 */}
             <div className="flex gap-5 p-6 rounded-xl border border-white/5 bg-[#0F1626]/40 hover:border-gold/30 transition-all">
               <div className="text-gold mt-0.5">
                 <LinkIcon className="w-6 h-6" />
@@ -1040,10 +1380,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Form */}
           <div className="lg:col-span-7 bg-[#0F1626] border border-white/5 p-8 rounded-2xl shadow-2xl">
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-              {/* Name */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">FULL NAME</label>
                 <input
@@ -1056,7 +1394,6 @@ export default function Home() {
                 {errors.name && <p className="text-xs text-red-500 font-medium">{errors.name.message}</p>}
               </div>
 
-              {/* Email */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">EMAIL ADDRESS</label>
                 <input
@@ -1069,7 +1406,6 @@ export default function Home() {
                 {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>}
               </div>
 
-              {/* Phone */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">PHONE NUMBER</label>
                 <input
@@ -1082,7 +1418,6 @@ export default function Home() {
                 {errors.phone && <p className="text-xs text-red-500 font-medium">{errors.phone.message}</p>}
               </div>
 
-              {/* Inquiry Type Select */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">INQUIRY TYPE</label>
                 <div className="relative">
@@ -1102,7 +1437,6 @@ export default function Home() {
                 {errors.inquiryType && <p className="text-xs text-red-500 font-medium">{errors.inquiryType.message}</p>}
               </div>
 
-              {/* Message */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-gray-400 font-mono tracking-wider">MESSAGE DESCRIPTION</label>
                 <textarea
@@ -1115,7 +1449,6 @@ export default function Home() {
                 {errors.message && <p className="text-xs text-red-500 font-medium">{errors.message.message}</p>}
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 data-testid="btn-submit-contact"
@@ -1133,7 +1466,6 @@ export default function Home() {
           ========================================== */}
       <footer className="bg-[#05080f] border-t border-white/5 py-16 relative z-20">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-left mb-12">
-          {/* Logo column */}
           <div className="flex flex-col items-start gap-4">
             <div className="flex items-center gap-3">
               <svg className="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1150,7 +1482,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Links column */}
           <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">NAVIGATION</span>
             <button data-testid="footer-products" onClick={() => handleNavClick('products')} className="text-sm text-gray-400 hover:text-white transition-colors">Products</button>
@@ -1159,7 +1490,6 @@ export default function Home() {
             <button data-testid="footer-contact" onClick={() => handleNavClick('contact')} className="text-sm text-gray-400 hover:text-white transition-colors">Contact</button>
           </div>
 
-          {/* Contact info column */}
           <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">COMMUNICATION</span>
             <span className="text-sm text-gray-400 font-mono">+91 7011991268</span>
@@ -1168,7 +1498,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom bar */}
         <div className="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-500 font-sans">
             © 2026 Paravion Technologies. All Rights Reserved.
@@ -1185,7 +1514,7 @@ export default function Home() {
       </footer>
 
       {/* ==========================================
-          6.11 FLOATING WHATSAPP BUTTON (Always visible)
+          6.11 FLOATING WHATSAPP BUTTON
           ========================================== */}
       <a
         data-testid="btn-whatsapp-floating"

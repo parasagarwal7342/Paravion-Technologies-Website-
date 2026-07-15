@@ -62,3 +62,37 @@ body {
   margin: 0;
   overflow-x: hidden;
 }
+
+/* Airplane Window Styling & Parallax Effects */
+.airplane-window-bezel {
+  background: #0b111e;
+  box-shadow: 
+    inset 0 0 60px rgba(0, 0, 0, 0.95),
+    0 15px 40px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.airplane-window-inner-shadow {
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9);
+}
+
+.airplane-glass-shimmer {
+  background: linear-gradient(
+    120deg, 
+    rgba(255, 255, 255, 0.12) 0%, 
+    rgba(255, 255, 255, 0.03) 30%, 
+    rgba(255, 255, 255, 0) 30%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.airplane-window-fullscreen-mask {
+  clip-path: inset(2% 2% 2% 2% round 40px);
+}
+
+@media (min-width: 768px) {
+  .airplane-window-fullscreen-mask {
+    clip-path: inset(4% 8% 4% 8% round 80px 80px 80px 80px / 120px 120px 120px 120px);
+  }
+}
