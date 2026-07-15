@@ -27,7 +27,7 @@ import { useToast } from '../components/ui/toast';
 import { Switch } from '../components/ui/switch';
 
 // ==========================================
-// 1. THREE.JS 3D SCROLL-LINKED CYBER SKY (LIGHT THEME)
+// 1. THREE.JS 3D SCROLL-LINKED CYBER SKY (FULL SCREEN)
 // ==========================================
 interface ThreeDBackgroundProps {
   mousePos: { x: number; y: number };
@@ -81,7 +81,7 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x3b82f6, 1.2); // light blue light source
+    const dirLight = new THREE.DirectionalLight(0x3b82f6, 1.2); 
     dirLight.position.set(5, 12, 10);
     scene.add(dirLight);
 
@@ -101,7 +101,6 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
       starPositions[i * 3 + 2] = -Math.random() * 80;
 
       const isTeal = Math.random() > 0.5;
-      // R, G, B channels mapping to Slate/Indigo values
       starColors[i * 3] = isTeal ? 0.05 : 0.14; 
       starColors[i * 3 + 1] = isTeal ? 0.58 : 0.38; 
       starColors[i * 3 + 2] = isTeal ? 0.53 : 0.92; 
@@ -230,7 +229,7 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     jetGroup.add(fin);
 
     scene.add(jetGroup);
-    jetGroup.position.set(0, 0, 5);
+    jetGroup.position.set(0, 0.2, 5); // Raised slightly for full-screen float
 
     // Animation variables
     let clock = new THREE.Clock();
@@ -276,7 +275,7 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
         jetGroup.rotation.z = THREE.MathUtils.lerp(jetGroup.rotation.z, planeRoll, 0.1);
         jetGroup.rotation.x = THREE.MathUtils.lerp(jetGroup.rotation.x, planePitch, 0.1);
         
-        jetGroup.position.y = Math.sin(elapsed * 2.5) * 0.15;
+        jetGroup.position.y = 0.2 + Math.sin(elapsed * 2.5) * 0.15;
         jetGroup.position.x = Math.cos(elapsed * 1.5) * 0.1;
       } else {
         jetGroup.visible = false;
@@ -338,10 +337,10 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
         securityCore.visible = false;
       }
 
-      // Mouse Parallax
-      const targetCamX = mouseRef.current.x * 2.0;
+      // Mouse Parallax & Dynamic scroll pan/orbit
+      const targetCamX = mouseRef.current.x * 2.5;
       const targetCamY = 2 + mouseRef.current.y * 1.5 - sr * 4.0;
-      const targetCamZ = 15 - sr * 6.0;
+      const targetCamZ = 15 - sr * 5.0;
 
       camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
       camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
@@ -402,7 +401,7 @@ const StatGlobe3D: React.FC = () => {
 
     const globeGeom = new THREE.SphereGeometry(1.6, 12, 12);
     const globeMat = new THREE.MeshBasicMaterial({
-      color: 0x2563eb, // blue globe for light theme
+      color: 0x2563eb, 
       wireframe: true,
       transparent: true,
       opacity: 0.4
@@ -411,7 +410,7 @@ const StatGlobe3D: React.FC = () => {
     scene.add(globe);
 
     const pointsMat = new THREE.PointsMaterial({
-      color: 0x0d9488, // teal nodes
+      color: 0x0d9488, 
       size: 0.12,
       transparent: true,
       opacity: 0.8
@@ -470,11 +469,11 @@ const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
   useEffect(() => {
     if (!coreRef.current || !ringRef.current) return;
     
-    let colorHex = 0xe11d48; // rose red (0-1)
+    let colorHex = 0xe11d48; 
     if (yesCount >= 4) {
-      colorHex = 0x0d9488; // teal green
+      colorHex = 0x0d9488; 
     } else if (yesCount >= 2) {
-      colorHex = 0xd97706; // amber
+      colorHex = 0xd97706; 
     }
 
     const material = coreRef.current.material as THREE.MeshBasicMaterial;
@@ -512,7 +511,7 @@ const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
     coreRef.current = core;
 
     const pointsMat = new THREE.PointsMaterial({
-      color: 0x0f172a, // dark points
+      color: 0x0f172a, 
       size: 0.1,
       transparent: true,
       opacity: 0.8
@@ -925,9 +924,16 @@ export default function Home() {
       className="relative min-h-screen text-[#0F172A] overflow-x-hidden font-sans"
     >
       {/* ==========================================
-          6.1 NAVBAR (Fixed Glassmorphic Header - Light Theme)
+          GLOBAL FULL-VIEWPORT FIXED 3D BACKGROUND
           ========================================== */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 transition-all duration-300">
+      <div className="fixed inset-0 w-full h-full pointer-events-none -z-10">
+        <ThreeDBackground mousePos={mousePos} />
+      </div>
+
+      {/* ==========================================
+          6.1 NAVBAR (Fixed Glassmorphic Header)
+          ========================================== */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-md border-b border-slate-200/50 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavClick('home')}>
             <svg className="w-9 h-9" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1012,26 +1018,11 @@ export default function Home() {
       </nav>
 
       {/* ==========================================
-          6.2 HERO (Immersive Passenger Window - Silver finish)
+          6.2 HERO (Floating Full-Screen Clean Banner)
           ========================================== */}
-      <section id="home" className="relative min-h-screen w-full flex items-center pt-20 overflow-hidden">
-        
-        {/* Full-Screen Metallic Passenger Window Frame */}
-        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none p-4 md:p-10 select-none">
-          {/* Transparent canvas container showing the watermark image through WebGL */}
-          <div className="absolute inset-[3%] md:inset-[6%_12%] rounded-[40px] md:rounded-[80px_80px_80px_80px_/_120px_120px_120px_120px] airplane-window-bezel pointer-events-auto overflow-hidden">
-            
-            {/* Transparent WebGL canvas scene */}
-            <ThreeDBackground mousePos={mousePos} />
-            
-            <div className="absolute inset-0 airplane-glass-shimmer mix-blend-screen opacity-50 z-10" />
-            <div className="absolute inset-0 airplane-window-inner-shadow z-10" />
-          </div>
-        </div>
-
-        {/* Hero floating contents */}
+      <section id="home" className="relative min-h-screen w-full flex items-center pt-20 overflow-hidden bg-transparent">
         <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center py-16">
-          <div className="lg:col-span-8 flex flex-col items-start text-left bg-white/70 backdrop-blur-md p-8 rounded-2xl border border-slate-200/50 shadow-xl">
+          <div className="lg:col-span-8 flex flex-col items-start text-left bg-white/75 backdrop-blur-md p-8 md:p-12 rounded-2xl border border-slate-200/50 shadow-2xl">
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1086,9 +1077,9 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.3 STATS BAR (6-column counters + 3D Globe - Light theme)
+          6.3 STATS BAR (6-column counters + 3D Globe)
           ========================================== */}
-      <section className="relative bg-slate-100/80 backdrop-blur-md border-y border-slate-200/50 py-12 z-20">
+      <section className="relative bg-slate-100/75 backdrop-blur-md border-y border-slate-200/50 py-12 z-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-center items-center">
             <div className="flex flex-col gap-1 items-center">
@@ -1128,7 +1119,7 @@ export default function Home() {
       {/* ==========================================
           6.4 PRODUCTS SECTION (Light Theme Cards)
           ========================================== */}
-      <section id="products" className="py-24 max-w-7xl mx-auto px-6 z-20 relative">
+      <section id="products" className="py-24 max-w-7xl mx-auto px-6 z-20 relative bg-transparent">
         <motion.div 
           initial="hidden"
           whileInView="visible"
@@ -1170,7 +1161,7 @@ export default function Home() {
                 viewport={{ once: false, margin: "-80px" }}
                 variants={idx % 2 === 0 ? cardLeftVariants : cardRightVariants}
                 data-testid={`card-product-${p.id}`}
-                className="group relative flex flex-col justify-between p-8 rounded-2xl border border-slate-200/60 bg-white/80 hover:border-teal/50 hover:shadow-lg transition-all duration-300"
+                className="group relative flex flex-col justify-between p-8 rounded-2xl border border-slate-200/60 bg-white/85 hover:border-teal/50 hover:shadow-lg transition-all duration-300"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -1260,9 +1251,9 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.5 DIGITAL SERVICES (Light theme cards)
+          6.5 DIGITAL SERVICES
           ========================================== */}
-      <section id="services" className="bg-slate-50/50 py-24 border-t border-slate-200/50 relative z-20">
+      <section id="services" className="bg-transparent py-24 border-t border-slate-200/50 relative z-20">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div 
             initial="hidden"
@@ -1294,7 +1285,7 @@ export default function Home() {
                 whileInView="visible"
                 viewport={{ once: false, margin: "-60px" }}
                 variants={cardFadeUpVariants}
-                className="group p-8 rounded-2xl border border-slate-200/50 bg-white/80 hover:border-teal/45 transition-all duration-300"
+                className="group p-8 rounded-2xl border border-slate-200/50 bg-white/80 hover:border-teal/45 transition-all duration-300 shadow-sm"
               >
                 <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
                   <srv.icon className="w-6 h-6" />
@@ -1310,7 +1301,7 @@ export default function Home() {
       {/* ==========================================
           6.6 TECHNOLOGY STACK
           ========================================== */}
-      <section id="stack" className="relative bg-slate-100/50 border-y border-slate-200/50 py-16 z-20">
+      <section id="stack" className="relative bg-slate-100/60 backdrop-blur-sm border-y border-slate-200/50 py-16 z-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <motion.h2 
             initial="hidden"
@@ -1335,7 +1326,7 @@ export default function Home() {
             ].map((tech) => (
               <span
                 key={tech}
-                className="px-5 py-2.5 rounded-full border border-slate-200 bg-white text-slate-600 font-mono text-sm tracking-wide transition-colors hover:border-teal/50 hover:text-slate-900"
+                className="px-5 py-2.5 rounded-full border border-slate-200 bg-white/80 text-slate-600 font-mono text-sm tracking-wide transition-colors hover:border-teal/50 hover:text-slate-900 shadow-sm"
               >
                 {tech}
               </span>
@@ -1347,13 +1338,13 @@ export default function Home() {
       {/* ==========================================
           6.7 SECURITY HEALTH CHECK (Dynamic Shield)
           ========================================== */}
-      <section id="assessment" className="py-24 max-w-6xl mx-auto px-6 z-20 relative">
+      <section id="assessment" className="py-24 max-w-6xl mx-auto px-6 z-20 relative bg-transparent">
         <motion.div 
           initial="hidden"
           whileInView="visible"
           viewport={{ once: false, margin: "-100px" }}
           variants={revealHeaderVariants}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/50 p-8 md:p-12 shadow-xl glow-blue items-center"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/50 p-8 md:p-12 shadow-2xl items-center"
         >
           <div className="lg:col-span-7">
             <div className="mb-8">
@@ -1405,7 +1396,7 @@ export default function Home() {
       {/* ==========================================
           6.8 ABOUT / VISION
           ========================================== */}
-      <section id="about" className="bg-slate-50/50 py-24 border-t border-slate-200/50 relative z-20">
+      <section id="about" className="bg-transparent py-24 border-t border-slate-200/50 relative z-20">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           <motion.div 
             initial="hidden"
@@ -1437,7 +1428,7 @@ export default function Home() {
                 whileInView="visible"
                 viewport={{ once: false, margin: "-60px" }}
                 variants={cardFadeUpVariants}
-                className={`flex gap-5 p-6 rounded-xl border border-slate-200 bg-white/80 ${p.border} transition-all duration-300 shadow-sm`}
+                className={`flex gap-5 p-6 rounded-xl border border-slate-200 bg-white/80 ${p.border} transition-all duration-300 shadow-md`}
               >
                 <div className={`${p.color} mt-0.5`}>
                   <p.icon className="w-6 h-6" />
@@ -1455,7 +1446,7 @@ export default function Home() {
       {/* ==========================================
           6.9 CONTACT
           ========================================== */}
-      <section id="contact" className="py-24 max-w-7xl mx-auto px-6 z-20 relative">
+      <section id="contact" className="py-24 max-w-7xl mx-auto px-6 z-20 relative bg-transparent">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           <motion.div 
             initial="hidden"
@@ -1495,7 +1486,7 @@ export default function Home() {
             whileInView="visible"
             viewport={{ once: false, margin: "-80px" }}
             variants={cardRightVariants}
-            className="lg:col-span-7 bg-white border border-slate-200/80 p-8 rounded-2xl shadow-xl"
+            className="lg:col-span-7 bg-white/90 backdrop-blur-md border border-slate-200/80 p-8 rounded-2xl shadow-2xl"
           >
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
@@ -1505,7 +1496,7 @@ export default function Home() {
                   data-testid="input-name"
                   {...register('name')}
                   placeholder="e.g. Vikram Sharma"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
                 />
                 {errors.name && <p className="text-xs text-red-500 font-medium">{errors.name.message}</p>}
               </div>
@@ -1517,7 +1508,7 @@ export default function Home() {
                   data-testid="input-email"
                   {...register('email')}
                   placeholder="e.g. v.sharma@enterprise.com"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
                 />
                 {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>}
               </div>
@@ -1529,7 +1520,7 @@ export default function Home() {
                   data-testid="input-phone"
                   {...register('phone')}
                   placeholder="e.g. +91 99999 88888"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
                 />
                 {errors.phone && <p className="text-xs text-red-500 font-medium">{errors.phone.message}</p>}
               </div>
@@ -1540,7 +1531,7 @@ export default function Home() {
                   <select
                     data-testid="select-inquiry"
                     {...register('inquiryType')}
-                    className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors pr-10"
+                    className="w-full appearance-none bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors pr-10"
                   >
                     <option value="">-- Select Inquiry Type --</option>
                     <option value="Cybersecurity Product">Cybersecurity Product</option>
@@ -1548,7 +1539,7 @@ export default function Home() {
                     <option value="Partnership">Partnership</option>
                     <option value="Other">Other</option>
                   </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
                 {errors.inquiryType && <p className="text-xs text-red-500 font-medium">{errors.inquiryType.message}</p>}
               </div>
@@ -1560,7 +1551,7 @@ export default function Home() {
                   {...register('message')}
                   rows={4}
                   placeholder="Describe your security details or product goals in detail..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors resize-none"
+                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors resize-none"
                 />
                 {errors.message && <p className="text-xs text-red-500 font-medium">{errors.message.message}</p>}
               </div>
@@ -1578,7 +1569,7 @@ export default function Home() {
       </section>
 
       {/* ==========================================
-          6.10 FOOTER (3-column layout - Slate/Dark theme contrast)
+          6.10 FOOTER (Slate/Dark grounding theme contrast)
           ========================================== */}
       <footer className="bg-slate-900 text-white border-t border-slate-800 py-16 relative z-20">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-left mb-12">

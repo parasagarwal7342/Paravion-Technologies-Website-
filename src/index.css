@@ -68,36 +68,4 @@ body {
   background-attachment: fixed;
 }
 
-/* Airplane Window Styling & Parallax Effects (Metallic Silver for Light Theme) */
-.airplane-window-bezel {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 30%, #cbd5e1 70%, #94a3b8 100%);
-  box-shadow: 
-    inset 0 0 20px rgba(0, 0, 0, 0.1),
-    0 15px 45px rgba(15, 23, 42, 0.15);
-  border: 6px solid #f8fafc;
-}
 
-.airplane-window-inner-shadow {
-  box-shadow: inset 0 0 35px rgba(15, 23, 42, 0.2);
-}
-
-.airplane-glass-shimmer {
-  background: linear-gradient(
-    120deg, 
-    rgba(255, 255, 255, 0.35) 0%, 
-    rgba(255, 255, 255, 0.08) 35%, 
-    rgba(255, 255, 255, 0) 35%, 
-    rgba(255, 255, 255, 0) 100%
-  );
-  pointer-events: none;
-}
-
-.airplane-window-fullscreen-mask {
-  clip-path: inset(2% 2% 2% 2% round 40px);
-}
-
-@media (min-width: 768px) {
-  .airplane-window-fullscreen-mask {
-    clip-path: inset(4% 8% 4% 8% round 80px 80px 80px 80px / 120px 120px 120px 120px);
-  }
-}
