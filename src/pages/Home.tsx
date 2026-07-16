@@ -346,6 +346,14 @@ const printQuoteSchema = z.object({
   quantity: z.number().min(50, "Minimum order quantity is 50 units"),
   deadline: z.string().min(1, "Delivery timeline target is required"),
   finishOption: z.string().min(1, "Please select a materials finish")
+}).refine((data) => {
+  if (data.productType === "Stationery / Business Cards" && data.quantity < 200) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Minimum order quantity for Business Cards is 200 units",
+  path: ["quantity"]
 });
 
 type PrintQuoteFormInputs = z.infer<typeof printQuoteSchema>;
@@ -399,7 +407,7 @@ export default function Home() {
   };
 
   const faqs = [
-    { q: "What is your Minimum Order Quantity (MOQ) for printing?", a: "Our standard MOQ starts at 50 units for premium product boxes and hoodies, and 100 units for standard business cards or promotional brochures." },
+    { q: "What is your Minimum Order Quantity (MOQ) for printing?", a: "Our standard MOQ starts at 50 units for premium product boxes and hoodies, and 200 units for business cards or customized corporate stationery." },
     { q: "Do you offer layout design support for bulk print orders?", a: "Yes! Our Digital division works directly with our Printing team to assist you with layout scaling, vector preparation, and spot-UV mapping files." },
     { q: "What are your standard turnaround timelines?", a: "Digital services range from 1 to 4 weeks depending on structure. Bulk printing standard deliveries take 3 to 5 business days, with urgent 24-48 hour rush packaging options available." },
     { q: "Can I receive material paper samples before placing an order?", a: "Yes, we ship premium sample kits showcasing matte laminates, soft-touch satin, and custom textured linen papers directly to your office on request." }
@@ -712,7 +720,7 @@ export default function Home() {
             </div>
             <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
               <span className="text-gold text-lg font-bold block mb-1">50 UNITS</span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Low Minimum Orders</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">MOQ (200 FOR BUSINESS CARDS)</span>
             </div>
           </div>
 
