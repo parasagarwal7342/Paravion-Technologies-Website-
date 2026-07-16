@@ -6,63 +6,26 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
   Globe,
-  Smartphone,
   Server,
-  Megaphone,
-  Paintbrush,
   Cloud,
   BrainCircuit,
-  Shield,
-  Link as LinkIcon,
-  ChevronDown,
-  ArrowRight,
+  Shield as ShieldIcon,
   Menu,
   X,
-  Eye,
-  FileText,
-  Gift,
-  Box,
-  Image as ImageIcon,
-  BookOpen,
   Layers,
-  HelpCircle,
-  Upload,
   User,
   Mail,
-  Phone
+  Phone,
+  Check,
+  ChevronRight,
+  Send,
+  Sparkles
 } from 'lucide-react';
 import { SiWhatsapp } from 'react-icons/si';
 import { useToast } from '../components/ui/toast';
 
 // ==========================================
-// ANIMATION MOTION VARIANTS FOR SCROLL RHYTHM
-// ==========================================
-const revealHeaderVariants = {
-  hidden: { opacity: 0, y: 35, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1,
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } 
-  }
-};
-
-const cardFadeUpVariants = {
-  hidden: { opacity: 0, y: 50 },
-  visible: (idx: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { 
-      type: "spring" as const, 
-      stiffness: 45, 
-      damping: 14,
-      delay: idx * 0.1 
-    }
-  })
-};
-
-// ==========================================
-// 1. THREE.JS 3D FLOATING CUBE FIELD BACKDROP
+// 1. THREE.JS 3D ABSTRACT GEOMETRIC SHIELD LOGO
 // ==========================================
 interface ThreeDBackgroundProps {
   mousePos: { x: number; y: number };
@@ -71,8 +34,6 @@ interface ThreeDBackgroundProps {
 const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseRef = useRef(mousePos);
-  
-  // Track scroll position
   const scrollRef = useRef({ target: 0, current: 0 });
 
   useEffect(() => {
@@ -87,7 +48,6 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     };
     window.addEventListener('scroll', handleScroll);
     handleScroll();
-
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -98,214 +58,172 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
     let width = container.clientWidth;
     let height = container.clientHeight;
 
-    // Scene & Camera
+    // Scene & Camera setup
     const scene = new THREE.Scene();
-    // Dark fog to fade cubes into black space
-    scene.fog = new THREE.FogExp2(0x000000, 0.025);
+    scene.fog = new THREE.FogExp2(0x000000, 0.03);
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
-    camera.position.set(0, 0, 14);
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+    camera.position.set(0, 0, 10);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 1);
+    renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0x06b6d4, 3.5, 45); // light core power
-    pointLight.position.set(0, 0, 0);
-    scene.add(pointLight);
+    const blueLight = new THREE.PointLight(0x06b6d4, 4.5, 30);
+    blueLight.position.set(4, 3, 2);
+    scene.add(blueLight);
 
-    const topLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    topLight.position.set(5, 10, 8);
-    scene.add(topLight);
+    const violetLight = new THREE.PointLight(0x4f46e5, 3.5, 30);
+    violetLight.position.set(-4, -3, 2);
+    scene.add(violetLight);
 
-    // 3D Metallic/Glass Cubes
-    const cubeCount = window.innerWidth < 768 ? 20 : 45;
-    const cubesGroup = new THREE.Group();
-    const cubeGeom = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    directionalLight.position.set(0, 10, 5);
+    scene.add(directionalLight);
+
+    // Abstract Geometric Shield Mesh
+    const shieldShape = new THREE.Shape();
+    shieldShape.moveTo(0, 1.6);
+    shieldShape.quadraticCurveTo(1.3, 1.4, 1.3, 0.2);
+    shieldShape.quadraticCurveTo(1.3, -0.9, 0, -1.8);
+    shieldShape.quadraticCurveTo(-1.3, -0.9, -1.3, 0.2);
+    shieldShape.quadraticCurveTo(-1.3, 1.4, 0, 1.6);
+
+    const extrudeSettings = {
+      depth: 0.25,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      steps: 1,
+      bevelSize: 0.08,
+      bevelThickness: 0.08
+    };
+
+    const shieldGeom = new THREE.ExtrudeGeometry(shieldShape, extrudeSettings);
+    shieldGeom.center();
+
+    // Solid plate metal material with high metallic sheen
+    const shieldMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      metalness: 0.95,
+      roughness: 0.12,
+      transparent: true,
+      opacity: 0.98
+    });
+
+    const shieldMesh = new THREE.Mesh(shieldGeom, shieldMaterial);
     
-    // Premium Metallic/Rough glass material for cubes
-    const cubeMaterial = new THREE.MeshStandardMaterial({
+    // Add glowing cyan wireframe overlay
+    const wireframeGeom = new THREE.WireframeGeometry(shieldGeom);
+    const wireframeMat = new THREE.LineBasicMaterial({
       color: 0x06b6d4,
-      metalness: 0.9,
-      roughness: 0.15,
       transparent: true,
-      opacity: 0.45
+      opacity: 0.55
     });
+    const shieldWireframe = new THREE.LineSegments(wireframeGeom, wireframeMat);
+    shieldMesh.add(shieldWireframe);
 
-    const cubeData: {
-      mesh: THREE.Mesh;
-      speedX: number;
-      speedY: number;
-      speedZ: number;
-      rotX: number;
-      rotY: number;
-    }[] = [];
-
-    for (let i = 0; i < cubeCount; i++) {
-      const scale = Math.random() * 0.9 + 0.3;
-      const mesh = new THREE.Mesh(cubeGeom, cubeMaterial.clone()); // separate material instance to vary specs
-      mesh.scale.set(scale, scale, scale);
-      
-      mesh.position.set(
-        (Math.random() - 0.5) * 28,
-        (Math.random() - 0.5) * 16,
-        (Math.random() - 0.5) * 20 - 5
-      );
-      
-      cubesGroup.add(mesh);
-      cubeData.push({
-        mesh,
-        speedX: (Math.random() - 0.5) * 0.2,
-        speedY: (Math.random() - 0.5) * 0.2,
-        speedZ: Math.random() * 0.4 + 0.15, // float forward
-        rotX: (Math.random() - 0.5) * 0.5 + 0.2,
-        rotY: (Math.random() - 0.5) * 0.4 + 0.2
-      });
-    }
-    scene.add(cubesGroup);
-
-    // Light Core Mesh (Rotating wireframe sphere inside light core)
-    const coreGeom = new THREE.IcosahedronGeometry(1.0, 1);
-    const coreMat = new THREE.MeshBasicMaterial({
+    // Add glowing node points at shield vertices
+    const nodeGeom = new THREE.BufferGeometry();
+    const nodePositions = new Float32Array([
+      0, 1.6, 0.18,
+      1.3, 0.2, 0.18,
+      0, -1.8, 0.18,
+      -1.3, 0.2, 0.18,
+      0, 0.8, 0.18,
+      0, -0.8, 0.18
+    ]);
+    nodeGeom.setAttribute('position', new THREE.BufferAttribute(nodePositions, 3));
+    const nodeMat = new THREE.PointsMaterial({
       color: 0x06b6d4,
-      wireframe: true,
+      size: 0.24,
       transparent: true,
-      opacity: 0.5
+      opacity: 0.9
     });
-    const lightCore = new THREE.Mesh(coreGeom, coreMat);
-    scene.add(lightCore);
+    const glowingNodes = new THREE.Points(nodeGeom, nodeMat);
+    shieldMesh.add(glowingNodes);
 
-    // Dual wireframe orbits around the core
-    const orbitRingGeom1 = new THREE.TorusGeometry(1.8, 0.02, 6, 24);
-    const orbitRingGeom2 = new THREE.TorusGeometry(2.2, 0.015, 6, 24);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.25 });
-    
-    const ring1 = new THREE.Mesh(orbitRingGeom1, ringMat);
-    const ring2 = new THREE.Mesh(orbitRingGeom2, ringMat);
-    
-    ring1.rotation.x = Math.PI / 4;
-    ring2.rotation.y = Math.PI / 3;
-    
-    scene.add(ring1);
-    scene.add(ring2);
+    // Thin orbit halo ring around the shield
+    const torusGeom = new THREE.TorusGeometry(2.1, 0.015, 8, 48);
+    const torusMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.25 });
+    const orbitRing = new THREE.Mesh(torusGeom, torusMat);
+    orbitRing.rotation.x = Math.PI / 2.2;
+    shieldMesh.add(orbitRing);
 
-    // Particle streaks radiating outward from core (Emulate light warp)
-    const particleCount = window.innerWidth < 768 ? 30 : 65;
-    const particleGeom = new THREE.BufferGeometry();
-    const partPositions = new Float32Array(particleCount * 3);
-    const partSpeeds: number[] = [];
+    scene.add(shieldMesh);
 
-    for (let i = 0; i < particleCount; i++) {
-      partPositions[i * 3] = 0;
-      partPositions[i * 3 + 1] = 0;
-      partPositions[i * 3 + 2] = 0;
-      partSpeeds.push(Math.random() * 4 + 1.5);
-    }
+    // Coordinate Projection Function
+    const getAnchorWorldPosition = (anchorId: string, camera: THREE.PerspectiveCamera, targetZ: number) => {
+      const el = document.getElementById(anchorId);
+      if (!el) {
+        // Fallback default coordinates if anchors aren't ready
+        return anchorId === 'hero-3d-anchor' 
+          ? new THREE.Vector3(2.8, 0.5, targetZ) 
+          : new THREE.Vector3(0, -9.5, targetZ);
+      }
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
 
-    particleGeom.setAttribute('position', new THREE.BufferAttribute(partPositions, 3));
-    const partMaterial = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 0.08,
-      transparent: true,
-      opacity: 0.7
-    });
+      const ndcX = (centerX / window.innerWidth) * 2 - 1;
+      const ndcY = -(centerY / window.innerHeight) * 2 + 1;
 
-    const particles = new THREE.Points(particleGeom, partMaterial);
-    scene.add(particles);
+      const vec = new THREE.Vector3(ndcX, ndcY, 0.5);
+      vec.unproject(camera);
+      const dir = vec.sub(camera.position).normalize();
+      const distance = (targetZ - camera.position.z) / dir.z;
+      return camera.position.clone().add(dir.multiplyScalar(distance));
+    };
 
-    // Animation loop variables
+    // Animation Loop
     let clock = new THREE.Clock();
     let animId: number;
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
       const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
 
-      // Lerp scroll ratio
+      // Smooth lerp scroll ratio
       scrollRef.current.current = THREE.MathUtils.lerp(
         scrollRef.current.current,
         scrollRef.current.target,
-        0.05
+        0.06
       );
       const sr = scrollRef.current.current;
 
-      // Color interpolation: Cyan (Digital) -> Amber (Printing)
-      const cyanColor = new THREE.Color(0x06b6d4);
-      const amberColor = new THREE.Color(0xf59e0b);
-      
-      // Interpolate theme color based on page scroll depth
-      const currentThemeColor = new THREE.Color().copy(cyanColor).lerp(
-        amberColor, 
-        THREE.MathUtils.clamp((sr - 0.4) * 2.5, 0, 1)
-      );
+      // Project anchors to screen coordinates
+      const heroPos = getAnchorWorldPosition('hero-3d-anchor', camera, 0);
+      const methPos = getAnchorWorldPosition('methodology-3d-anchor', camera, 0);
 
-      // Apply theme color interpolation
-      pointLight.color.copy(currentThemeColor);
-      coreMat.color.copy(currentThemeColor);
-      ringMat.color.copy(currentThemeColor);
-      
-      // Rotate core and orbit rings
-      lightCore.rotation.y += delta * 0.3;
-      lightCore.rotation.x += delta * 0.15;
-      ring1.rotation.z += delta * 0.1;
-      ring2.rotation.z -= delta * 0.15;
+      // Lerp position based on scroll progress
+      const targetPos = new THREE.Vector3().copy(heroPos).lerp(methPos, sr);
+      shieldMesh.position.copy(targetPos);
 
-      // Expand particle streaks
-      const positions = particleGeom.attributes.position.array as Float32Array;
-      for (let i = 0; i < particleCount; i++) {
-        const angle = (i / particleCount) * Math.PI * 2;
-        const speed = partSpeeds[i] * delta * (1.0 + sr * 3.0);
-        
-        positions[i * 3] += Math.cos(angle) * speed;
-        positions[i * 3 + 1] += Math.sin(angle) * speed;
-        positions[i * 3 + 2] += (i % 2 === 0 ? 1 : -1) * 0.1 * speed;
+      // Lerp scale down slightly as we scroll to the Methodology circle
+      const targetScale = THREE.MathUtils.lerp(1.0, 0.58, sr);
+      shieldMesh.scale.set(targetScale, targetScale, targetScale);
 
-        const dist = Math.sqrt(positions[i * 3] ** 2 + positions[i * 3 + 1] ** 2);
-        if (dist > 12) {
-          positions[i * 3] = 0;
-          positions[i * 3 + 1] = 0;
-          positions[i * 3 + 2] = 0;
-        }
-      }
-      particleGeom.attributes.position.needsUpdate = true;
+      // Oscillations (Idle drift)
+      const idleDriftY = Math.sin(elapsed * 1.8) * 0.12;
+      const idleDriftX = Math.cos(elapsed * 1.4) * 0.08;
+      shieldMesh.position.y += idleDriftY;
+      shieldMesh.position.x += idleDriftX;
 
-      // Drift and rotate cubes
-      cubeData.forEach((cube) => {
-        cube.mesh.position.z += delta * cube.speedZ * (1.0 + sr * 2.5);
-        cube.mesh.position.x += delta * cube.speedX;
-        cube.mesh.position.y += delta * cube.speedY;
+      // Rotations: Continuous Y rotation + Scroll rotation + Mouse parallax magnetic tilt
+      const mouseParallaxX = mouseRef.current.x * 0.28;
+      const mouseParallaxY = mouseRef.current.y * 0.22;
 
-        cube.mesh.rotation.x += delta * cube.rotX;
-        cube.mesh.rotation.y += delta * cube.rotY;
+      shieldMesh.rotation.y = elapsed * 0.45 + sr * Math.PI * 2.0 + mouseParallaxX;
+      shieldMesh.rotation.x = Math.sin(elapsed * 0.6) * 0.1 + sr * 0.3 + mouseParallaxY;
 
-        // Apply interpolated color to cubes
-        if (cube.mesh.material instanceof THREE.MeshStandardMaterial) {
-          cube.mesh.material.color.copy(currentThemeColor);
-        }
-
-        // Loop cube boundary
-        if (cube.mesh.position.z > 8) {
-          cube.mesh.position.z = -18;
-          cube.mesh.position.x = (Math.random() - 0.5) * 28;
-          cube.mesh.position.y = (Math.random() - 0.5) * 16;
-        }
-      });
-
-      // Camera parallax movement
-      const targetCamX = mouseRef.current.x * 2.0;
-      const targetCamY = mouseRef.current.y * 1.5 - sr * 6.0; // Panning camera down with scroll
-      const targetCamZ = 14 - sr * 4.0; // Zooming camera closer
-
-      camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
-      camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.05);
-      camera.lookAt(0, 0, 0);
+      // Rotate torus halo separately
+      orbitRing.rotation.z -= delta * 0.3;
 
       renderer.render(scene, camera);
     };
@@ -336,36 +254,115 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
 };
 
 // ==========================================
-// BULK PRINT QUOTE SCHEMAS
+// FORM SCHEMAS (Talk to an Expert)
 // ==========================================
-const printQuoteSchema = z.object({
+const expertContactSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  productType: z.string().min(1, "Product type selection is required"),
-  quantity: z.number().min(50, "Minimum order quantity is 50 units"),
-  deadline: z.string().min(1, "Delivery timeline target is required"),
-  finishOption: z.string().min(1, "Please select a materials finish")
-}).refine((data) => {
-  if (data.productType === "Stationery / Business Cards" && data.quantity < 200) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Minimum order quantity for Business Cards is 200 units",
-  path: ["quantity"]
+  requirements: z.string().min(10, "Requirements details must be at least 10 characters")
 });
 
-type PrintQuoteFormInputs = z.infer<typeof printQuoteSchema>;
+type ExpertContactFormInputs = z.infer<typeof expertContactSchema>;
 
 // ==========================================
-// MAIN APP COMPONENT
+// SPOTLIGHT CARD COMPONENT
+// ==========================================
+interface ServiceCardProps {
+  title: string;
+  desc: string;
+  icon: React.ComponentType<any>;
+}
+
+const ServiceCard: React.FC<ServiceCardProps> = ({ title, desc, icon: Icon }) => {
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCoords({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
+
+  return (
+    <div 
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="relative group p-8 rounded border border-zinc-900 bg-zinc-950/60 hover:border-cyan-500/40 transition-all duration-300 overflow-hidden"
+    >
+      {isHovered && (
+        <div 
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(280px circle at ${coords.x}px ${coords.y}px, rgba(6, 182, 212, 0.08), transparent 85%)`
+          }}
+        />
+      )}
+      <div className="w-12 h-12 rounded bg-cyan-500/10 flex items-center justify-center text-cyan-400 mb-6 group-hover:scale-105 transition-transform duration-300">
+        <Icon className="w-6 h-6" />
+      </div>
+      <h4 className="text-lg font-bold text-white mb-3 font-display">{title}</h4>
+      <p className="text-xs text-zinc-400 leading-relaxed font-sans">{desc}</p>
+    </div>
+  );
+};
+
+// ==========================================
+// ACCORDION FAQ CARD
+// ==========================================
+interface FaqCardProps {
+  q: string;
+  a: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+const FaqCard: React.FC<FaqCardProps> = ({ q, a, isOpen, onToggle }) => {
+  return (
+    <div className="border border-zinc-900 bg-zinc-950/40 rounded overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full p-5 flex items-center justify-between text-left font-bold text-sm uppercase tracking-wide text-white hover:bg-zinc-900 transition-colors"
+      >
+        <span className="font-display">{q}</span>
+        <span className="text-zinc-500 font-mono transition-transform duration-300">
+          {isOpen ? '[-]' : '[+]'}
+        </span>
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-zinc-900 bg-black/60 px-5 py-4 text-xs text-zinc-400 leading-relaxed font-sans"
+          >
+            {a}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ==========================================
+// MAIN LANDING PAGE
 // ==========================================
 export default function Home() {
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  
+  // Testimonials Slider state
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+
+  // Methodology active step tracker
+  const [activeMethodologyStep, setActiveMethodologyStep] = useState(0);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -381,36 +378,44 @@ export default function Home() {
     }
   };
 
-  // Bulk Print Quoting Form Hooks
+  // Expert Contact Form validation
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors }
-  } = useForm<PrintQuoteFormInputs>({
-    resolver: zodResolver(printQuoteSchema),
+  } = useForm<ExpertContactFormInputs>({
+    resolver: zodResolver(expertContactSchema),
     defaultValues: {
       name: '',
       email: '',
       phone: '',
-      productType: '',
-      quantity: 100,
-      deadline: '',
-      finishOption: ''
+      requirements: ''
     }
   });
 
-  const onSubmitQuote = (data: PrintQuoteFormInputs) => {
-    console.log("Bulk Printing Quote Request:", data);
-    toast("Quote Request Submitted Successfully — A printing coordinator will call you back within 2 hours.", "success");
+  const onSubmitContact = (data: ExpertContactFormInputs) => {
+    console.log("Talk to an Expert Request:", data);
+    toast("Inquiry Submitted Successfully — A Defensive Architect will reach out shortly.", "success");
     reset();
   };
 
+  const testimonials = [
+    { quote: "Paravion's defensive audits restructured our core network. The implementation of zero-trust nodes stopped lateral threat movement instantly.", author: "Arjun Mehta, CTO of Capital Secure" },
+    { quote: "Their circular gap assessments provided a clean pathway to regulatory compliance. Professional and highly technical defensive capability.", author: "Priya Nair, Risk Assessment Lead at FinVibe" }
+  ];
+
+  const methodologySteps = [
+    { title: "Gap Assessment", desc: "Identify structural vulnerabilities and check edge nodes for configuration errors." },
+    { title: "Remediation", desc: "Patch core systems, update access vectors, and deploy zero-trust node clusters." },
+    { title: "Certification", desc: "Validate that compliance metrics meet global enterprise data defense codes." },
+    { title: "Audit Verification", desc: "Run secondary pen testing loops and mock breach drills to confirm system defense integrity." }
+  ];
+
   const faqs = [
-    { q: "What is your Minimum Order Quantity (MOQ) for printing?", a: "Our standard MOQ starts at 50 units for premium product boxes and hoodies, and 200 units for business cards or customized corporate stationery." },
-    { q: "Do you offer layout design support for bulk print orders?", a: "Yes! Our Digital division works directly with our Printing team to assist you with layout scaling, vector preparation, and spot-UV mapping files." },
-    { q: "What are your standard turnaround timelines?", a: "Digital services range from 1 to 4 weeks depending on structure. Bulk printing standard deliveries take 3 to 5 business days, with urgent 24-48 hour rush packaging options available." },
-    { q: "Can I receive material paper samples before placing an order?", a: "Yes, we ship premium sample kits showcasing matte laminates, soft-touch satin, and custom textured linen papers directly to your office on request." }
+    { q: "What security frameworks do you deploy?", a: "We align defensive infrastructures directly with SOC 2 Type II, ISO 27001, and NIST frameworks using automated continuous tracking systems." },
+    { q: "How long does a vulnerability audit take?", a: "Standard perimeter network audits are completed in 3 to 5 business days, with fully comprehensive codebase audits scaling up to 2 weeks." },
+    { q: "Do you offer post-compliance tracking?", a: "Yes, our audit verification step includes quarterly system checks and real-time firewall intrusion audits." }
   ];
 
   return (
@@ -418,56 +423,47 @@ export default function Home() {
       onMouseMove={handleMouseMove}
       className="relative min-h-screen bg-black text-[#FAFAFA] overflow-x-hidden font-sans select-none"
     >
-      {/* HUD Edge Graphics */}
-      <div className="fixed top-1/3 right-6 z-40 writing-mode-vertical hidden lg:flex items-center gap-3 text-[10px] font-mono text-zinc-500 tracking-[0.2em] pointer-events-none select-none">
-        <span className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse" />
-        SYSTEM ACTIVE // SECTOR: DIGITAL_PRINT_2026
-      </div>
+      {/* Dynamic Ambient Background Grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0c0c0e_1px,transparent_1px),linear-gradient(to_bottom,#0c0c0e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none -z-20" />
 
       {/* ==========================================
-          GLOBAL VIEWPORT FIXED 3D BACKGROUND
+          PERSISTENT 3D WEBGL ENGINE CANVAS
           ========================================== */}
       <div className="fixed inset-0 w-full h-full pointer-events-none -z-10">
         <ThreeDBackground mousePos={mousePos} />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/50 to-black/90 pointer-events-none" />
       </div>
 
       {/* ==========================================
-          NAVBAR (Fixed Cinematic Dark Panel)
+          1. NAVIGATION BAR
           ========================================== */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-900 transition-all duration-300">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-900">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavClick('home')}>
             <svg className="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="navHexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#06B6D4" />
-                  <stop offset="100%" stopColor="#F59E0B" />
-                </linearGradient>
-              </defs>
-              <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#navHexGrad)" />
-              <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#000000" />
-              <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#navHexGrad)" />
+              <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="#06b6d4" fillOpacity="0.15" stroke="#06b6d4" strokeWidth="3" />
+              <polygon points="50,22 80,38 80,62 50,78 20,62 20,38" fill="#4f46e5" fillOpacity="0.2" stroke="#4f46e5" strokeWidth="2" />
+              <circle cx="50" cy="50" r="10" fill="#ffffff" />
             </svg>
-            <span className="text-white font-extrabold tracking-[0.25em] font-sans text-lg">
-              PARAVION <span className="text-teal font-light">STUDIOS</span>
+            <span className="text-white font-extrabold tracking-[0.25em] font-display text-lg uppercase">
+              PARAVION <span className="text-cyan-400 font-light">SECURE</span>
             </span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
             <button onClick={() => handleNavClick('home')} className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest">Home</button>
-            <button onClick={() => handleNavClick('digital-section')} className="text-xs font-semibold text-zinc-400 hover:text-teal transition-colors uppercase tracking-widest">Digital Services</button>
-            <button onClick={() => handleNavClick('print-section')} className="text-xs font-semibold text-zinc-400 hover:text-gold transition-colors uppercase tracking-widest">Printing Services</button>
+            <button onClick={() => handleNavClick('services')} className="text-xs font-semibold text-zinc-400 hover:text-cyan-400 transition-colors uppercase tracking-widest">Services</button>
+            <button onClick={() => handleNavClick('methodology')} className="text-xs font-semibold text-zinc-400 hover:text-cyan-400 transition-colors uppercase tracking-widest">Methodology</button>
             <button onClick={() => handleNavClick('about')} className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest">About</button>
-            <button onClick={() => handleNavClick('contact')} className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest">Contact</button>
+            <button onClick={() => handleNavClick('faq')} className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest">FAQ</button>
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center">
             <button
-              onClick={() => handleNavClick('quote-form')}
-              className="px-6 py-2.5 rounded bg-zinc-900 border border-zinc-800 text-white font-semibold text-xs tracking-wider uppercase hover:bg-zinc-800 transition-colors cursor-pointer"
+              onClick={() => handleNavClick('expert-form')}
+              className="px-6 py-2.5 rounded border border-cyan-500/30 text-white font-bold text-xs tracking-wider uppercase hover:border-cyan-400 hover:bg-cyan-500/5 transition-all cursor-pointer border-beam"
             >
-              Order Portal
+              Talk to an Expert
             </button>
           </div>
 
@@ -488,627 +484,431 @@ export default function Home() {
               className="md:hidden border-t border-zinc-900 bg-black px-6 py-6 flex flex-col gap-5"
             >
               <button onClick={() => handleNavClick('home')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Home</button>
-              <button onClick={() => handleNavClick('digital-section')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Digital Services</button>
-              <button onClick={() => handleNavClick('print-section')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Printing Services</button>
+              <button onClick={() => handleNavClick('services')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Services</button>
+              <button onClick={() => handleNavClick('methodology')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Methodology</button>
               <button onClick={() => handleNavClick('about')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">About</button>
-              <button onClick={() => handleNavClick('contact')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Contact</button>
-              <button onClick={() => handleNavClick('quote-form')} className="w-full py-3 rounded bg-zinc-900 border border-zinc-800 text-white font-bold text-center text-xs tracking-widest uppercase">Order Portal</button>
+              <button onClick={() => handleNavClick('faq')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">FAQ</button>
+              <button onClick={() => handleNavClick('expert-form')} className="w-full py-3 rounded border border-cyan-500/30 text-white font-bold text-center text-xs tracking-widest uppercase">Talk to an Expert</button>
             </motion.div>
           )}
         </AnimatePresence>
       </nav>
 
       {/* ==========================================
-          HERO SECTION (Split Headline layout)
+          2. HERO SECTION
           ========================================== */}
-      <section id="home" className="relative min-h-screen w-full flex items-center pt-20 overflow-hidden bg-transparent">
-        
-        {/* Corner HUD marks */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="hud-corner-tl" />
-          <div className="hud-corner-tr" />
-          <div className="hud-corner-bl" />
-          <div className="hud-corner-br" />
-        </div>
+      <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-transparent">
+        <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          {/* Left Column: Typography Content */}
+          <div className="lg:col-span-7 flex flex-col items-start text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/5 text-cyan-400 text-[10px] font-mono uppercase tracking-widest mb-6">
+              <Sparkles className="w-3 h-3" /> Cyber Defense Systems
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-black text-white font-display tracking-tight leading-[1.05] mb-6 uppercase">
+              ENGINEERING <br />
+              <span className="text-transparent bg-gradient-to-r from-cyan-400 to-indigo-500 bg-clip-text">CYBER SOVEREIGNTY.</span>
+            </h1>
 
-        <div className="max-w-7xl mx-auto px-6 w-full relative z-10 flex flex-col justify-center min-h-[80vh]">
-          {/* Split Headline Design */}
-          <div className="flex flex-col items-start gap-1 mb-8">
-            <motion.h1 
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-5xl md:text-8xl lg:text-9xl font-black text-white tracking-tighter leading-none"
-            >
-              EXPERIENCE THE
-            </motion.h1>
-            <motion.h1 
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
-              className="text-5xl md:text-8xl lg:text-9xl font-black text-transparent bg-gradient-to-r from-teal-400 to-amber-500 bg-clip-text tracking-tighter leading-none self-end"
-            >
-              IMPOSSIBLE.
-            </motion.h1>
+            <p className="max-w-xl text-zinc-400 text-sm md:text-base leading-relaxed mb-8 font-sans">
+              Advanced threat defense infrastructure and zero-trust engineering layers built to protect enterprise networks, digital frameworks, and sovereign data repositories.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              <button
+                onClick={() => handleNavClick('services')}
+                className="px-8 py-4 rounded bg-cyan-500 text-black font-extrabold text-xs uppercase tracking-widest hover:bg-cyan-400 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg shadow-cyan-500/20"
+              >
+                Explore Solutions
+              </button>
+              <button
+                onClick={() => handleNavClick('methodology')}
+                className="px-8 py-4 rounded border border-zinc-800 text-white font-extrabold text-xs uppercase tracking-widest hover:border-cyan-500/40 hover:bg-white/5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                Verify Systems
+              </button>
+            </div>
+
+            {/* Brand Badges */}
+            <div className="flex flex-col gap-3">
+              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">TRUSTED DEFENSE ACCREDITATIONS</span>
+              <div className="flex flex-wrap items-center gap-6 text-zinc-400 font-bold text-xs uppercase tracking-widest font-display">
+                <span className="border border-zinc-900 bg-zinc-950/40 px-3 py-1 rounded">SOC 2 COMPLIANT</span>
+                <span className="border border-zinc-900 bg-zinc-950/40 px-3 py-1 rounded">ISO 27001</span>
+                <span className="border border-zinc-900 bg-zinc-950/40 px-3 py-1 rounded">NIST FRAMED</span>
+              </div>
+            </div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="max-w-2xl text-zinc-400 text-sm md:text-base leading-relaxed mb-12 self-start border-l border-zinc-800 pl-6"
-          >
-            Paravion Studios is an award-winning digital engineering and physical bulk printing studio, delivering cinematic interactive platforms and high-volume brand production since 2026.
-          </motion.div>
+          {/* Right Column: 3D Emblem Container Space */}
+          <div className="lg:col-span-5 flex justify-center items-center h-[450px]">
+            {/* The 3D shield will project directly onto this container area */}
+            <div 
+              id="hero-3d-anchor" 
+              className="w-full max-w-[380px] aspect-square rounded-full border border-zinc-900/30 bg-zinc-950/5 flex items-center justify-center relative"
+            >
+              {/* Outer faint coordinate grid inside empty target circle */}
+              <div className="absolute inset-4 rounded-full border border-dashed border-zinc-900/20 animate-spin-slow" />
+              <div className="absolute inset-16 rounded-full border border-zinc-900/10" />
+            </div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex flex-col sm:flex-row gap-4 z-20"
-          >
-            <button
-              onClick={() => handleNavClick('digital-section')}
-              className="px-8 py-4 rounded bg-teal text-black font-extrabold text-xs uppercase tracking-widest hover:bg-teal-400 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg shadow-teal/20"
-            >
-              Explore Digital Services
-            </button>
-            <button
-              onClick={() => handleNavClick('print-section')}
-              className="px-8 py-4 rounded border border-gold text-gold font-extrabold text-xs uppercase tracking-widest hover:bg-gold/5 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg shadow-gold/10"
-            >
-              Explore Bulk Printing
-            </button>
-          </motion.div>
         </div>
       </section>
 
       {/* ==========================================
-          INTRO / DIVISIONS SECTION (01 / 02 Blocks)
+          3. MISSION / INTRO SECTION
           ========================================== */}
-      <section className="py-24 max-w-7xl mx-auto px-6 z-20 relative border-t border-zinc-900 bg-black/60 backdrop-blur-md">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mb-16">
+      <section id="about" className="py-28 relative z-20 border-t border-zinc-900 bg-black/70 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           <div className="lg:col-span-5">
-            <h2 className="text-xs font-mono text-zinc-500 tracking-[0.25em] uppercase mb-4">Core Architecture</h2>
-            <h3 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">Two Divisions.<br />One Integrated Output.</h3>
+            <span className="text-xs font-mono text-cyan-400 tracking-[0.25em] uppercase mb-4 block">Our Mandate</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight font-display uppercase">
+              DEVIATION IS VULNERABILITY. <br />
+              EXECUTION IS DECREED.
+            </h2>
           </div>
           <div className="lg:col-span-7">
-            <p className="text-zinc-400 text-sm leading-relaxed">
-              We operate through two main creative divisions that work hand in hand. By combining custom software engineering with high-volume physical production pipelines, we build cohesive brand realities.
+            <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-6 font-sans">
+              As digital network infrastructures grow increasingly complex, static perimeter security systems fail. Paravion Secure builds continuous, automated, multi-faceted defensive architectures that shield network assets natively.
             </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-          {/* Division 01 */}
-          <div className="p-8 rounded border border-zinc-950 bg-zinc-950/40 flex flex-col justify-between group hover:border-teal/30 transition-all duration-300">
-            <div>
-              <span className="text-6xl font-mono text-teal/10 font-bold block mb-6 group-hover:text-teal/25 transition-colors">01</span>
-              <h4 className="text-xl font-bold text-white mb-3">Digital Services</h4>
-              <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                Engineered web applications, digital branding, interactive user interfaces, organic search optimization, and cinematic motion production.
-              </p>
-            </div>
-            <button onClick={() => handleNavClick('digital-section')} className="text-xs text-teal font-mono tracking-widest uppercase inline-flex items-center gap-2 mt-8 hover:underline">
-              Enter Digital Sector <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Division 02 */}
-          <div className="p-8 rounded border border-zinc-950 bg-zinc-950/40 flex flex-col justify-between group hover:border-gold/30 transition-all duration-300">
-            <div>
-              <span className="text-6xl font-mono text-gold/10 font-bold block mb-6 group-hover:text-gold/25 transition-colors">02</span>
-              <h4 className="text-xl font-bold text-white mb-3">Printing Services</h4>
-              <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                High-volume bulk packaging prints, corporate merchandise, event exhibition signages, catalog books, and NFC smart paper technologies.
-              </p>
-            </div>
-            <button onClick={() => handleNavClick('print-section')} className="text-xs text-gold font-mono tracking-widest uppercase inline-flex items-center gap-2 mt-8 hover:underline">
-              Enter Print Sector <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <p className="text-zinc-500 text-xs md:text-sm leading-relaxed font-sans">
+              From zero-trust authorization systems to comprehensive gap assessment routines and industrial certifications, we verify code integrity and system protection vectors with absolute execution precision.
+            </p>
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          DIGITAL SERVICES SECTION (Cyan Accent Glow)
+          4. FEATURE / SERVICES GRID (Interactive Cards)
           ========================================== */}
-      <section id="digital-section" className="py-28 bg-transparent relative z-20 border-t border-zinc-900">
+      <section id="services" className="py-28 relative z-20 border-t border-zinc-900 bg-transparent">
         <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, margin: "-100px" }}
-            variants={revealHeaderVariants}
-            className="flex flex-col items-center text-center mb-16"
-          >
-            <span className="text-xs font-mono text-teal tracking-[0.25em] uppercase mb-4">Division 01 // Interactive Sector</span>
-            <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Digital Services</h2>
-            <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">
-              We construct digital ecosystems with modern frameworks, clean microservice APIs, and custom motion elements optimized for performance.
-            </p>
-          </motion.div>
+          <div className="flex flex-col items-center text-center mb-16">
+            <span className="text-xs font-mono text-cyan-400 tracking-[0.25em] uppercase mb-4">Defensive Portfolios</span>
+            <h2 className="text-3xl md:text-5xl font-black text-white font-display uppercase">DEFENSE ARCHITECTURE</h2>
+          </div>
 
-          {/* Services Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: Globe, title: "Web Design & Development", desc: "Interactive Single Page Applications built with React, Vite, Tailwind CSS, and headless database layouts." },
-              { icon: Smartphone, title: "Mobile & Hybrid App Dev", desc: "Native experiences on iOS and Android with lightweight transaction layers and responsive screen sync." },
-              { icon: Paintbrush, title: "Branding & Identity System", desc: "Typography scales, visual guidelines, vector design libraries, and consistent color assets for web launch." },
-              { icon: Megaphone, title: "Digital Marketing & Copy", desc: "Strategic content assets, conversion funnel copywriting, and data pipelines to optimize lead conversion." },
-              { icon: Server, title: "Search Engine Optimization", desc: "Technical crawls, schema markup integration, keyword indexing, and high-domain speed audits." },
-              { icon: Cloud, title: "Video & Motion Editing", desc: "Cinematic promotional trailers, motion graphic logo animations, and optimized web-video sequences." }
-            ].map((srv, idx) => (
-              <motion.div
-                key={srv.title}
-                custom={idx}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: false, margin: "-60px" }}
-                variants={cardFadeUpVariants}
-                className="group p-8 rounded border border-zinc-900 bg-black/80 hover:border-teal/50 hover:glow-cyan transition-all duration-300"
-              >
-                <div className="w-12 h-12 rounded bg-teal/10 flex items-center justify-center text-teal mb-6 group-hover:scale-105 duration-300">
-                  <srv.icon className="w-6 h-6" />
-                </div>
-                <h4 className="text-lg font-bold text-white mb-3">{srv.title}</h4>
-                <p className="text-xs text-zinc-400 leading-relaxed font-sans">{srv.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Digital Work Preview Gallery */}
-          <div className="mt-20">
-            <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-8 text-center">Interactive Previews</h3>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { title: "UI Mockup v1", spec: "Figma File", src: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=400&q=80" },
-                { title: "Web Engine UI", spec: "React Framework", src: "https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=400&q=80" },
-                { title: "Visual Dashboard", spec: "Analytical Core", src: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
-                { title: "Mobile Wireframe", spec: "iOS Prototype", src: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" }
-              ].map((img, idx) => (
-                <div key={idx} className="relative aspect-video rounded overflow-hidden group border border-zinc-900 bg-zinc-950">
-                  <img src={img.src} alt={img.title} className="w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-500" />
-                  <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                    <span className="text-[10px] font-mono text-teal font-bold">{img.spec}</span>
-                    <span className="text-xs font-bold text-white uppercase mt-0.5">{img.title}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-center mt-12">
-            <button
-              onClick={() => handleNavClick('quote-form')}
-              className="px-8 py-3 rounded bg-zinc-900 border border-zinc-800 text-teal text-xs uppercase font-extrabold tracking-widest hover:bg-zinc-800 transition-all cursor-pointer"
-            >
-              Get Digital Quote
-            </button>
+            <ServiceCard 
+              icon={BrainCircuit} 
+              title="Zero-Trust Architecture" 
+              desc="Deploy node verification frameworks that validate access tokens dynamically, stopping lateral breach movement."
+            />
+            <ServiceCard 
+              icon={ShieldIcon} 
+              title="Gap Assessment audits" 
+              desc="Run automated scanning drills to locate perimeter vulnerabilities and configuration leaks."
+            />
+            <ServiceCard 
+              icon={Server} 
+              title="Secure Cloud Sync" 
+              desc="Set up isolated server infrastructure arrays with encrypted transmission pipes and high accessibility scores."
+            />
+            <ServiceCard 
+              icon={Layers} 
+              title="Compliance Engineering" 
+              desc="Map your technical codebase to fit SOC 2, ISO 27001, and NIST data regulatory specifications."
+            />
+            <ServiceCard 
+              icon={Globe} 
+              title="Continuous Penetration Drilling" 
+              desc="Simulate targeted breach flows and stress-test data barriers under mock threat parameters."
+            />
+            <ServiceCard 
+              icon={Cloud} 
+              title="API Gateway Protection" 
+              desc="Build secure microservice channels with custom payload cryptography and rate-limit controls."
+            />
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          PRINTING SERVICES SECTION (Amber Accent Glow)
+          5. CLIENT TESTIMONIALS CAROUSEL
           ========================================== */}
-      <section id="print-section" className="py-28 bg-transparent relative z-20 border-t border-zinc-900">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, margin: "-100px" }}
-            variants={revealHeaderVariants}
-            className="flex flex-col items-center text-center mb-16"
-          >
-            <span className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Division 02 // Production Sector</span>
-            <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Printing Services</h2>
-            <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">
-              Wholesale printing and industrial packaging. We manage complete print runs with strict color checks, premium paper finishes, and fast deliveries.
-            </p>
-          </motion.div>
-
-          {/* Highlights bar */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 max-w-4xl mx-auto text-center font-mono">
-            <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
-              <span className="text-gold text-lg font-bold block mb-1">24-48 HR</span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Fast Turnaround Option</span>
-            </div>
-            <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
-              <span className="text-gold text-lg font-bold block mb-1">UP TO 40% OFF</span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Volume Discounts</span>
-            </div>
-            <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
-              <span className="text-gold text-lg font-bold block mb-1">50 UNITS</span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">MOQ (200 FOR BUSINESS CARDS)</span>
-            </div>
-          </div>
-
-          {/* Services Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: FileText, title: "Business Cards & Stationery", desc: "Corporate business cards, letterheads, and customized card stock with embossing and gold foil stamping options." },
-              { icon: BookOpen, title: "Brochures & flyers", desc: "Folded pamphlets, product catalogs, brochures, and flyers on matte linen or high-gloss art paper." },
-              { icon: ImageIcon, title: "Banners & Signs", desc: "Pull-up event display standees, exhibition fabric backdrops, vinyl wall stickers, and expo banners." },
-              { icon: Box, title: "Custom Packaging", desc: "Branded product packaging box configurations, secure shipping tapes, and custom merchandise containers." },
-              { icon: Layers, title: "Wholesale Print Runs", desc: "Bulk offset publishing, corporate notebooks, training manuals, calendar sets, and marketing materials." },
-              { icon: Gift, title: "Custom Merchandise", desc: "Company branded welcome onboarding gift sets, hoodies, activewear, thermal bottles, and notebooks." }
-            ].map((srv, idx) => (
-              <motion.div
-                key={srv.title}
-                custom={idx}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: false, margin: "-60px" }}
-                variants={cardFadeUpVariants}
-                className="group p-8 rounded border border-zinc-900 bg-black/80 hover:border-gold/50 hover:glow-amber transition-all duration-300"
-              >
-                <div className="w-12 h-12 rounded bg-gold/10 flex items-center justify-center text-gold mb-6 group-hover:scale-105 duration-300">
-                  <srv.icon className="w-6 h-6" />
-                </div>
-                <h4 className="text-lg font-bold text-white mb-3">{srv.title}</h4>
-                <p className="text-xs text-zinc-400 leading-relaxed font-sans">{srv.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Materials Showcase */}
-          <div className="mt-20 p-8 rounded border border-zinc-900 bg-zinc-950/40">
-            <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-6 text-center">Available Finishes & Materials</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-center">
-              {[
-                { title: "Matte Laminate", desc: "Non-reflective look" },
-                { title: "Soft-Touch Satin", desc: "Velvety hand-feel" },
-                { title: "Spot UV Gloss", desc: "High-contrast shine" },
-                { title: "Textured Linen", desc: "Organic paper weave" },
-                { title: "Gold Foil Stamp", desc: "Premium metallic stamp" },
-                { title: "Recycled Kraft", desc: "Eco-friendly craft" }
-              ].map((mat, idx) => (
-                <div key={idx} className="p-3 border border-zinc-900 bg-black rounded">
-                  <span className="text-xs font-bold text-white block mb-0.5">{mat.title}</span>
-                  <span className="text-[10px] text-zinc-500 font-sans">{mat.desc}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          REQUEST BULK QUOTE FORM (Custom Terminal UI)
-          ========================================== */}
-      <section id="quote-form" className="py-24 max-w-4xl mx-auto px-6 z-20 relative bg-transparent">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: false, margin: "-100px" }}
-          variants={revealHeaderVariants}
-          className="bg-black border border-zinc-900 rounded p-8 shadow-2xl relative"
-        >
-          {/* Form HUD marks */}
-          <div className="absolute top-4 right-4 flex items-center gap-1.5 text-[9px] font-mono text-zinc-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
-            ORDER_PORTAL_ONLINE
-          </div>
-
-          <h3 className="text-xs font-mono text-gold tracking-widest uppercase mb-2">Quoting Terminal</h3>
-          <h4 className="text-2xl font-bold text-white mb-6">Request Bulk Print / Service Quote</h4>
+      <section className="py-24 relative z-20 border-t border-zinc-900 bg-zinc-950/30 backdrop-blur-sm">
+        <div className="max-w-4xl mx-auto px-6">
+          <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-10 text-center">System Validations</h3>
           
-          <form onSubmit={handleSubmit(onSubmitQuote)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="relative min-h-[160px] flex flex-col justify-center text-center">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTestimonial}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.35 }}
+                className="font-display italic text-lg md:text-xl text-zinc-300 leading-relaxed"
+              >
+                "{testimonials[activeTestimonial].quote}"
+                <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-bold mt-6 block not-italic">
+                  — {testimonials[activeTestimonial].author}
+                </span>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Slider Navigation */}
+            <div className="flex justify-center gap-4 mt-10">
+              <button
+                onClick={() => setActiveTestimonial((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1))}
+                className="p-2 border border-zinc-800 rounded text-zinc-400 hover:text-white hover:border-cyan-400 transition-all cursor-pointer"
+                aria-label="Previous Testimonial"
+              >
+                <ChevronRight className="w-4 h-4 rotate-180" />
+              </button>
+              <button
+                onClick={() => setActiveTestimonial((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1))}
+                className="p-2 border border-zinc-800 rounded text-zinc-400 hover:text-white hover:border-cyan-400 transition-all cursor-pointer"
+                aria-label="Next Testimonial"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          6. INTERACTIVE METHODOLOGY SEGMENT (3D Target)
+          ========================================== */}
+      <section id="methodology" className="py-28 relative z-20 border-t border-zinc-900 bg-transparent">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col items-center text-center mb-20">
+            <span className="text-xs font-mono text-cyan-400 tracking-[0.25em] uppercase mb-4">Verification Pathway</span>
+            <h2 className="text-3xl md:text-5xl font-black text-white font-display uppercase">METHODOLOGY</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Left circular process columns */}
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              {methodologySteps.slice(0, 2).map((step, idx) => (
+                <div
+                  key={step.title}
+                  onMouseEnter={() => setActiveMethodologyStep(idx)}
+                  className={`p-6 rounded border transition-all duration-300 cursor-pointer ${
+                    activeMethodologyStep === idx 
+                      ? 'border-cyan-500/50 bg-cyan-500/5' 
+                      : 'border-zinc-900 bg-zinc-950/40 hover:border-zinc-800'
+                  }`}
+                >
+                  <span className="text-xs font-mono text-cyan-400 font-bold block mb-1">STEP 0{idx + 1}</span>
+                  <h4 className="text-base font-bold text-white mb-2 font-display uppercase">{step.title}</h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed font-sans">{step.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Central 3D Methodology Anchor Container */}
+            <div className="lg:col-span-4 flex justify-center items-center h-[340px]">
+              {/* As the user scrolls down to this section, the 3D shield will anchor here */}
+              <div 
+                id="methodology-3d-anchor" 
+                className="w-full max-w-[260px] aspect-square rounded-full border border-dashed border-cyan-500/20 bg-cyan-500/5 flex items-center justify-center relative shadow-2xl shadow-cyan-500/5"
+              >
+                <div className="absolute inset-3 rounded-full border border-zinc-900/40" />
+                
+                {/* Visual coordinate brackets */}
+                <div className="absolute top-2 left-2 text-[9px] font-mono text-cyan-500/40 font-bold">[SYS_LOCK]</div>
+                <div className="absolute bottom-2 right-2 text-[9px] font-mono text-cyan-500/40 font-bold">Z_TRANS_0</div>
+              </div>
+            </div>
+
+            {/* Right circular process columns */}
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              {methodologySteps.slice(2, 4).map((step, idx) => {
+                const stepIdx = idx + 2;
+                return (
+                  <div
+                    key={step.title}
+                    onMouseEnter={() => setActiveMethodologyStep(stepIdx)}
+                    className={`p-6 rounded border transition-all duration-300 cursor-pointer ${
+                      activeMethodologyStep === stepIdx 
+                        ? 'border-cyan-500/50 bg-cyan-500/5' 
+                        : 'border-zinc-900 bg-zinc-950/40 hover:border-zinc-800'
+                    }`}
+                  >
+                    <span className="text-xs font-mono text-cyan-400 font-bold block mb-1">STEP 0{stepIdx + 1}</span>
+                    <h4 className="text-base font-bold text-white mb-2 font-display uppercase">{step.title}</h4>
+                    <p className="text-xs text-zinc-400 leading-relaxed font-sans">{step.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          7. KEY FACTS / METRICS
+          ========================================== */}
+      <section className="py-24 relative z-20 border-t border-zinc-900 bg-black">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center font-display">
+          {[
+            { metric: "150+", label: "INFRASTRUCTURE ARRAYS PATCHED" },
+            { metric: "45+", label: "SECURITY AUDITS RATIFIED" },
+            { metric: "100%", label: "ACCERTED DATA INTEGRITY" }
+          ].map((stat, idx) => (
+            <div key={idx} className="p-8 border border-zinc-900 bg-zinc-950/30 rounded">
+              <span className="text-transparent bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-5xl md:text-6xl font-black block mb-2">{stat.metric}</span>
+              <span className="text-[10px] text-zinc-500 font-mono tracking-widest uppercase">{stat.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ==========================================
+          8. FAQ SECTION (Accordion)
+          ========================================== */}
+      <section id="faq" className="py-28 relative z-20 border-t border-zinc-900 bg-transparent">
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="flex flex-col items-center text-center mb-16">
+            <span className="text-xs font-mono text-cyan-400 tracking-[0.25em] uppercase mb-4">FAQ Support</span>
+            <h2 className="text-3xl md:text-5xl font-black text-white font-display uppercase">EXPERT RESPONSES</h2>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {faqs.map((faq, idx) => (
+              <FaqCard 
+                key={idx}
+                q={faq.q}
+                a={faq.a}
+                isOpen={activeFaq === idx}
+                onToggle={() => setActiveFaq(activeFaq === idx ? null : idx)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          9. CALL-TO-ACTION (Footer Banner Form)
+          ========================================== */}
+      <section id="expert-form" className="py-24 max-w-4xl mx-auto px-6 z-20 relative bg-transparent">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="bg-black border border-zinc-900 hover:border-cyan-500/30 rounded p-8 md:p-12 shadow-2xl relative overflow-hidden"
+        >
+          {/* Neon corner flare */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+
+          <h3 className="text-xs font-mono text-cyan-400 tracking-widest uppercase mb-2">Security Core</h3>
+          <h4 className="text-2xl md:text-3xl font-bold text-white font-display uppercase mb-6">Talk to a Defensive Architect</h4>
+          
+          <form onSubmit={handleSubmit(onSubmitContact)} className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-gold" /> Full Name
+                <User className="w-3.5 h-3.5 text-cyan-400" /> Full Name
               </label>
               <input
                 type="text"
                 {...register('name')}
-                placeholder="Vikram Sharma"
-                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
+                placeholder="Devon Lane"
+                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-cyan-500 transition-colors font-mono"
               />
               {errors.name && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.name.message}</p>}
             </div>
 
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-gold" /> Email Address
+                <Mail className="w-3.5 h-3.5 text-cyan-400" /> Email Address
               </label>
               <input
                 type="email"
                 {...register('email')}
-                placeholder="v.sharma@enterprise.com"
-                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
+                placeholder="devon@enterprise.com"
+                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-cyan-500 transition-colors font-mono"
               />
               {errors.email && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.email.message}</p>}
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:col-span-2">
               <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-gold" /> Phone Number
+                <Phone className="w-3.5 h-3.5 text-cyan-400" /> Phone Number
               </label>
               <input
                 type="tel"
                 {...register('phone')}
                 placeholder="+91 99999 88888"
-                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
+                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-cyan-500 transition-colors font-mono"
               />
               {errors.phone && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.phone.message}</p>}
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
-                Product Division
-              </label>
-              <div className="relative">
-                <select
-                  {...register('productType')}
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold appearance-none font-mono"
-                >
-                  <option value="">-- Select Product type --</option>
-                  <option value="Custom Packaging Boxes">Custom Packaging Boxes</option>
-                  <option value="Stationery / Business Cards">Stationery / Business Cards</option>
-                  <option value="Event Banners / Signage">Event Banners / Signage</option>
-                  <option value="Corporate Merchandise">Corporate Merchandise</option>
-                  <option value="Digital Web Application">Digital Web Application</option>
-                  <option value="Brand Identity System">Brand Identity System</option>
-                </select>
-                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-              </div>
-              {errors.productType && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.productType.message}</p>}
-            </div>
-
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:col-span-2">
               <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider">
-                Order Quantity
+                Defensive Requirements & Architecture Targets
               </label>
-              <input
-                type="number"
-                {...register('quantity', { valueAsNumber: true })}
-                placeholder="100"
-                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
+              <textarea
+                {...register('requirements')}
+                rows={4}
+                placeholder="Describe your network infrastructure size and primary data compliance targets..."
+                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-cyan-500 transition-colors font-sans leading-relaxed"
               />
-              {errors.quantity && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.quantity.message}</p>}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider">
-                Target Deadline
-              </label>
-              <select
-                {...register('deadline')}
-                className="w-full bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold appearance-none font-mono"
-              >
-                <option value="">-- Choose Timeline --</option>
-                <option value="Urgent (24-48 Hours)">Urgent (24-48 Hours)</option>
-                <option value="Standard (3-5 Days)">Standard (3-5 Days)</option>
-                <option value="Flexible (1-2 Weeks)">Flexible (1-2 Weeks)</option>
-              </select>
-              {errors.deadline && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.deadline.message}</p>}
-            </div>
-
-            <div className="flex flex-col gap-2 md:col-span-2">
-              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider">
-                Materials Finish
-              </label>
-              <select
-                {...register('finishOption')}
-                className="w-full bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold appearance-none font-mono"
-              >
-                <option value="">-- Choose Finish Option --</option>
-                <option value="Matte Laminate Finish">Matte Laminate Finish</option>
-                <option value="Soft-Touch Satin Finish">Soft-Touch Satin Finish</option>
-                <option value="Spot UV Highlights">Spot UV Highlights</option>
-                <option value="Gold Foil Stamping">Gold Foil Stamping</option>
-                <option value="Not Applicable (Digital)">Not Applicable (Digital)</option>
-              </select>
-              {errors.finishOption && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.finishOption.message}</p>}
-            </div>
-
-            <div className="flex flex-col gap-2 md:col-span-2">
-              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
-                <Upload className="w-3.5 h-3.5 text-gold" /> Upload Layout Artwork
-              </label>
-              <div className="border border-dashed border-zinc-800 rounded bg-zinc-950 p-6 text-center cursor-pointer hover:border-gold/50 transition-colors">
-                <span className="text-[11px] text-zinc-500 block font-mono">DRAG & DROP VECTOR FILE (.AI, .PDF, .EPS) OR CLICK TO BROWSE</span>
-              </div>
+              {errors.requirements && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.requirements.message}</p>}
             </div>
 
             <button
               type="submit"
-              className="md:col-span-2 w-full py-4 rounded bg-gold hover:bg-gold/90 text-white font-extrabold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-gold/20"
+              className="md:col-span-2 w-full py-4 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
             >
-              Submit Order Request
+              Submit Integration Inquiry <Send className="w-3.5 h-3.5" />
             </button>
           </form>
         </motion.div>
       </section>
 
       {/* ==========================================
-          SHARED TESTIMONIALS CAROUSEL
-          ========================================== */}
-      <section className="py-24 max-w-6xl mx-auto px-6 z-20 relative border-t border-zinc-900 bg-transparent">
-        <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-10 text-center">Client Testimonials</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {[
-            { quote: "Paravion's Digital team engineered our entire e-commerce portal in React while their Printing division produced 5,000 custom matte boxes in 4 days. Incredible cross-over workflow.", author: "Rajesh K., Founder of SPA Enterprises" },
-            { quote: "The NFC-enabled smart business cards are spectacular. Spot-UV styling is clean, and the transaction speed is seamless. Absolute corporate recommendation.", author: "Neha S., Brand Director at Lexis Legal" }
-          ].map((t, idx) => (
-            <div key={idx} className="p-8 rounded border border-zinc-900 bg-zinc-950/40 font-sans italic text-sm text-zinc-300 leading-relaxed flex flex-col justify-between">
-              <p>"{t.quote}"</p>
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider font-bold mt-6 block">— {t.author}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ==========================================
-          SHARED FAQ SECTION (Accordion)
-          ========================================== */}
-      <section className="py-24 max-w-4xl mx-auto px-6 z-20 relative border-t border-zinc-900 bg-transparent">
-        <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-10 text-center">Frequently Asked Questions</h3>
-        
-        <div className="flex flex-col gap-4">
-          {faqs.map((faq, idx) => (
-            <div key={idx} className="border border-zinc-900 bg-zinc-950/40 rounded overflow-hidden">
-              <button
-                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                className="w-full p-5 flex items-center justify-between text-left font-bold text-sm uppercase tracking-wide text-white hover:bg-zinc-900 transition-colors"
-              >
-                <span>{faq.q}</span>
-                <span className="text-zinc-500 font-mono">{activeFaq === idx ? '[-]' : '[+]'}</span>
-              </button>
-              
-              <AnimatePresence>
-                {activeFaq === idx && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="border-t border-zinc-900 bg-black/60 px-5 py-4 text-xs text-zinc-400 leading-relaxed font-sans"
-                  >
-                    {faq.a}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ==========================================
-          SHARED ABOUT SECTION
-          ========================================== */}
-      <section id="about" className="py-28 bg-transparent relative z-20 border-t border-zinc-900">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          <div className="lg:col-span-7 flex flex-col items-start">
-            <span className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Studio Mandate</span>
-            <h3 className="text-3xl md:text-5xl font-black text-white mb-6">Cinematic Delivery & Bulk Packaging</h3>
-            <p className="text-zinc-400 mb-6 leading-relaxed text-sm font-sans">
-              Founded in 2026, Paravion Studios represents a unique combination of pixel-perfect digital software engineering and industrial packaging printing capability. We believe visual consistency across web interfaces and physical packaging materials is paramount for modern brands.
-            </p>
-            <p className="text-zinc-500 text-xs leading-relaxed font-sans">
-              Headquartered in New Delhi, India, our print warehouse handles large-scale runs using advanced offset machinery, while our digital lab crafts bespoke front-ends and cloud pipelines.
-            </p>
-          </div>
-
-          <div className="lg:col-span-5 flex flex-col gap-6 w-full">
-            {[
-              { icon: BrainCircuit, color: "text-teal", title: "Web Architecture Labs", desc: "Engineered web structures utilizing React, Node, and Tailwind frameworks." },
-              { icon: Shield, color: "text-blue-500", title: "Industrial Print Warehouse", desc: "High-volume packaging box prints, custom tapes, and merchandise catalogs." },
-              { icon: LinkIcon, color: "text-gold", title: "Smart Paper Solutions", desc: "NFC smart cards, RFID tag overlays, and security holographic labels." }
-            ].map((p) => (
-              <div
-                key={p.title}
-                className="flex gap-5 p-6 rounded border border-zinc-900 bg-zinc-950/40 shadow-sm"
-              >
-                <div className={`${p.color} mt-0.5`}>
-                  <p.icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-white mb-1.5">{p.title}</h4>
-                  <p className="text-xs text-zinc-400 leading-relaxed font-sans">{p.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          CONTACT SECTION (Direct connections)
-          ========================================== */}
-      <section id="contact" className="py-24 max-w-7xl mx-auto px-6 z-20 relative bg-transparent border-t border-zinc-900">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          <div className="flex flex-col items-start justify-center">
-            <span className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Direct Connection</span>
-            <h3 className="text-3xl md:text-5xl font-black text-white mb-6">Contact Us</h3>
-            <p className="text-zinc-400 leading-relaxed text-sm mb-8">
-              Discuss bulk orders, schedule paper finish sampling, or request developer evaluations for custom software systems.
-            </p>
-
-            <div className="flex flex-col gap-5 text-sm font-mono text-zinc-400">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">WHATSAPP / PHONE</span>
-                <a href="https://wa.me/917011991268" target="_blank" rel="noopener noreferrer" className="text-white hover:text-teal font-bold transition-colors">
-                  +91 7011991268
-                </a>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">EMAIL CORRESPONDENCE</span>
-                <a href="mailto:paraviontechnologies@gmail.com" className="text-teal hover:underline font-bold transition-colors">
-                  paraviontechnologies@gmail.com
-                </a>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">STUDIO HEADQUARTERS</span>
-                <span className="text-white">New Delhi, India</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8 rounded border border-zinc-900 bg-zinc-950/40 text-center flex flex-col items-center justify-center">
-            <HelpCircle className="w-12 h-12 text-gold mb-4" />
-            <h4 className="text-lg font-bold text-white mb-2 uppercase tracking-wide">Have Design Vector Files?</h4>
-            <p className="text-xs text-zinc-400 max-w-sm mb-6 leading-relaxed">
-              If you already have your print layout vectors ready, click the Order Portal to upload them directly with your quoting details.
-            </p>
-            <button
-              onClick={() => handleNavClick('quote-form')}
-              className="px-6 py-3 rounded bg-gold text-white font-extrabold text-xs uppercase tracking-widest hover:bg-gold/90 transition-all cursor-pointer"
-            >
-              Open Quoting Terminal
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          FOOTER (Grounding Dark Layout)
+          10. FOOTER
           ========================================== */}
       <footer className="bg-black border-t border-zinc-900 py-16 relative z-20 text-zinc-400">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-left mb-12">
           <div className="flex flex-col items-start gap-4">
             <div className="flex items-center gap-3">
               <svg className="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#navHexGrad)" />
-                <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#000000" />
-                <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#navHexGrad)" />
+                <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="#06b6d4" fillOpacity="0.15" stroke="#06b6d4" strokeWidth="3" />
+                <polygon points="50,22 80,38 80,62 50,78 20,62 20,38" fill="#4f46e5" fillOpacity="0.2" stroke="#4f46e5" strokeWidth="2" />
+                <circle cx="50" cy="50" r="10" fill="#ffffff" />
               </svg>
-              <span className="text-white font-extrabold tracking-wider font-sans text-lg">
-                PARAVION STUDIOS
+              <span className="text-white font-extrabold tracking-wider font-display text-lg uppercase">
+                PARAVION SECURE
               </span>
             </div>
             <p className="text-xs text-zinc-500 leading-relaxed font-sans max-w-xs">
-              Think Big. Build Secure. Grow Digital. Dedicated to integrated digital design systems and high-volume industrial printing.
+              Think Big. Build Secure. Grow Digital. Delivering state-of-the-art zero-trust defense architectures for global enterprise nodes since 2026.
             </p>
           </div>
 
           <div className="flex flex-col items-start gap-3">
-            <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">NAVIGATION</span>
-            <button onClick={() => handleNavClick('digital-section')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Digital Division</button>
-            <button onClick={() => handleNavClick('print-section')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Printing Division</button>
-            <button onClick={() => handleNavClick('about')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">About Studio</button>
-            <button onClick={() => handleNavClick('contact')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Contact</button>
+            <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-bold mb-1">Defense Solutions</span>
+            <button onClick={() => handleNavClick('services')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Defensive Portfolios</button>
+            <button onClick={() => handleNavClick('methodology')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Verification Pathways</button>
+            <button onClick={() => handleNavClick('about')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Sovereign Mandates</button>
           </div>
 
           <div className="flex flex-col items-start gap-3">
-            <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">COMMUNICATION</span>
+            <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-bold mb-1">Direct Connection</span>
             <span className="text-sm text-zinc-500 font-mono">+91 7011991268</span>
-            <span className="text-sm text-teal font-mono">paraviontechnologies@gmail.com</span>
+            <span className="text-sm text-cyan-400 font-mono">paraviontechnologies@gmail.com</span>
             <span className="text-sm text-zinc-500 font-sans font-bold">New Delhi, India</span>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-6 border-t border-zinc-900 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-zinc-650 font-sans">
-            © 2026 Paravion Technologies / Studios. All Rights Reserved.
+            © 2026 Paravion Technologies / Secure. All Rights Reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs font-mono text-zinc-600">
-            <span>Integrated Studio Model</span>
+          <div className="flex items-center gap-4 text-xs font-mono text-zinc-650">
+            <span>SOC 2 Type II Accerted</span>
             <span>·</span>
             <span className="flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-teal" />
-              Sovereign Production Pipeline
+              <Check className="w-3.5 h-3.5 text-cyan-400" />
+              Sovereign Node Integrity Verified
             </span>
           </div>
         </div>

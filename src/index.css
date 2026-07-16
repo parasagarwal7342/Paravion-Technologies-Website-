@@ -1,53 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: 0 0% 0%;         /* #000000 */
-  --card:        0 0% 4%;        /* #0A0A0A */
-  --primary:     217.2 91.2% 59.8%; /* #3b82f6 */
+  --background: 0 0% 0%;       /* #000000 */
+  --card: 240 10% 3.9%;        /* #0A0A0A */
+  --primary: 188 86% 53%;      /* #06b6d4 */
+  --accent: 250 84% 54%;       /* #4f46e5 */
   
-  --color-gold-hex: #F59E0B;     /* Amber 500 */
-  --color-teal-hex: #06B6D4;     /* Cyan 500 */
-  --color-card-surface-hex: #0A0A0A;
-
-  --foreground: 0 0% 98%;        /* #FAFAFA */
-  --muted: 240 5% 64.9%;         /* #A1A1AA */
-  --border: 240 5.9% 10%;        /* #1A1A1A */
-  --input: 240 5.9% 10%;
-  --ring: 240 5% 64.9%;
+  --foreground: 0 0% 98%;      /* #FAFAFA */
+  --muted: 240 5% 64.9%;       /* #A1A1AA */
+  --border: 240 5.9% 10%;      /* #1A1A1A */
   --radius: 0.5rem;
 }
 
 @theme {
   --font-sans: 'Plus Jakarta Sans', sans-serif;
-  --font-mono: 'Space Mono', monospace;
+  --font-display: 'Space Grotesk', sans-serif;
   
-  --color-gold: var(--color-gold-hex);
-  --color-teal: var(--color-teal-hex);
-  --color-card-surface: var(--color-card-surface-hex);
-}
-
-@utility glow-cyan {
-  box-shadow: 0 0 30px rgba(6, 182, 212, 0.18);
-}
-
-@utility glow-amber {
-  box-shadow: 0 0 30px rgba(245, 158, 11, 0.18);
+  --color-cyan-glow: rgba(6, 182, 212, 0.15);
+  --color-steel-glow: rgba(244, 244, 245, 0.05);
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
   background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1A1A1A;
-  border-radius: 3px;
+  background: #111115;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3B82F6;
+  background: #06b6d4;
 }
 
 html {
@@ -62,44 +48,36 @@ body {
   overflow-x: hidden;
 }
 
-/* HUD elements */
-.hud-corner-tl {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 15px;
-  height: 15px;
-  border-top: 2px solid rgba(255, 255, 255, 0.25);
-  border-left: 2px solid rgba(255, 255, 255, 0.25);
-  pointer-events: none;
+/* Glassmorphism */
+.glass-panel {
+  background: rgba(10, 10, 12, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
-.hud-corner-tr {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 15px;
-  height: 15px;
-  border-top: 2px solid rgba(255, 255, 255, 0.25);
-  border-right: 2px solid rgba(255, 255, 255, 0.25);
-  pointer-events: none;
+
+.glass-panel:hover {
+  border-color: rgba(6, 182, 212, 0.25);
 }
-.hud-corner-bl {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  width: 15px;
-  height: 15px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
-  border-left: 2px solid rgba(255, 255, 255, 0.25);
-  pointer-events: none;
+
+/* Glowing text gradients */
+.text-glow {
+  text-shadow: 0 0 40px rgba(6, 182, 212, 0.35);
 }
-.hud-corner-br {
+
+/* Border Beam effect */
+.border-beam {
+  position: relative;
+  overflow: hidden;
+}
+
+.border-beam::after {
+  content: '';
   position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 15px;
-  height: 15px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
-  border-right: 2px solid rgba(255, 255, 255, 0.25);
+  inset: 0;
+  border: 1px solid transparent;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #06b6d4, #4f46e5, #06b6d4) border-box;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
   pointer-events: none;
 }
