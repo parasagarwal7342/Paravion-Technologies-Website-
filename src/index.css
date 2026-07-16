@@ -2,19 +2,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: 210 40% 98%;    /* #F8FAFC - slate 50 */
-  --card:        0 0% 100%;     /* #FFFFFF */
-  --primary:     221.2 83.2% 53.3%; /* #2563EB - Accent Blue */
+  --background: 0 0% 0%;         /* #000000 */
+  --card:        0 0% 4%;        /* #0A0A0A */
+  --primary:     217.2 91.2% 59.8%; /* #3b82f6 */
   
-  --color-gold-hex: #D97706;    /* Amber 600 for light mode readability */
-  --color-teal-hex: #0D9488;    /* Teal 600 for light mode readability */
-  --color-card-surface-hex: #FFFFFF;
+  --color-gold-hex: #F59E0B;     /* Amber 500 */
+  --color-teal-hex: #06B6D4;     /* Cyan 500 */
+  --color-card-surface-hex: #0A0A0A;
 
-  --foreground: 222.2 47.4% 11.2%; /* #0F172A - slate 900 */
-  --muted: 215.4 16.3% 46.9%;      /* #475569 - slate 600 */
-  --border: 214.3 31.8% 91.4%;     /* #E2E8F0 - slate 200 */
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
+  --foreground: 0 0% 98%;        /* #FAFAFA */
+  --muted: 240 5% 64.9%;         /* #A1A1AA */
+  --border: 240 5.9% 10%;        /* #1A1A1A */
+  --input: 240 5.9% 10%;
+  --ring: 240 5% 64.9%;
   --radius: 0.5rem;
 }
 
@@ -27,45 +27,79 @@
   --color-card-surface: var(--color-card-surface-hex);
 }
 
-@utility glow-teal {
-  box-shadow: 0 4px 20px rgba(13, 148, 136, 0.12);
+@utility glow-cyan {
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.18);
 }
 
-@utility glow-blue {
-  box-shadow: 0 4px 25px rgba(37, 99, 235, 0.12);
+@utility glow-amber {
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.18);
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-  border: 2px solid #F1F5F9;
+  background: #1A1A1A;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2563EB;
+  background: #3B82F6;
 }
 
 html {
   scroll-behavior: smooth;
-  background-color: #F8FAFC;
-  color: #0F172A;
+  background-color: #000000;
+  color: #FAFAFA;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 body {
   margin: 0;
   overflow-x: hidden;
-  /* Premium light high-tech background image watermark */
-  background-image: linear-gradient(rgba(248, 250, 252, 0.94), rgba(248, 250, 252, 0.94)), url('/light_tech_bg.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
 }
 
-
+/* HUD elements */
+.hud-corner-tl {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 15px;
+  height: 15px;
+  border-top: 2px solid rgba(255, 255, 255, 0.25);
+  border-left: 2px solid rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+.hud-corner-tr {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 15px;
+  height: 15px;
+  border-top: 2px solid rgba(255, 255, 255, 0.25);
+  border-right: 2px solid rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+.hud-corner-bl {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 15px;
+  height: 15px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  border-left: 2px solid rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+.hud-corner-br {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 15px;
+  height: 15px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  border-right: 2px solid rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,8 +11,6 @@ import {
   Megaphone,
   Paintbrush,
   Cloud,
-  ExternalLink,
-  Lock,
   BrainCircuit,
   Shield,
   Link as LinkIcon,
@@ -20,106 +18,51 @@ import {
   ArrowRight,
   Menu,
   X,
-  Eye
+  Eye,
+  FileText,
+  Gift,
+  Box,
+  Image as ImageIcon,
+  BookOpen,
+  Layers,
+  HelpCircle,
+  Upload,
+  User,
+  Mail,
+  Phone
 } from 'lucide-react';
 import { SiWhatsapp } from 'react-icons/si';
 import { useToast } from '../components/ui/toast';
-import { Switch } from '../components/ui/switch';
 
 // ==========================================
-// CUSTOM MESH GENERATORS (CYBERSECURITY WIREFRAMES)
+// ANIMATION MOTION VARIANTS FOR SCROLL RHYTHM
 // ==========================================
-
-// Helper to create a 3D wireframe Lock with glowing vertex nodes
-const createLockMesh = (color: number) => {
-  const lockGroup = new THREE.Group();
-  
-  const wireframeMat = new THREE.MeshBasicMaterial({
-    color: color,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.35
-  });
-
-  const nodePointMat = new THREE.PointsMaterial({
-    color: 0xffffff,
-    size: 0.12,
-    transparent: true,
-    opacity: 0.9
-  });
-
-  // Lock Body (Box)
-  const bodyGeom = new THREE.BoxGeometry(1.4, 1.0, 0.4);
-  const body = new THREE.Mesh(bodyGeom, wireframeMat);
-  const bodyNodes = new THREE.Points(bodyGeom, nodePointMat);
-  lockGroup.add(body);
-  lockGroup.add(bodyNodes);
-
-  // Lock Shackle (Torus)
-  const shackleGeom = new THREE.TorusGeometry(0.45, 0.08, 6, 16, Math.PI);
-  const shackle = new THREE.Mesh(shackleGeom, wireframeMat);
-  const shackleNodes = new THREE.Points(shackleGeom, nodePointMat);
-  
-  shackle.position.y = 0.5;
-  shackle.rotation.z = Math.PI; // point shackle arch upwards
-  shackleNodes.position.y = 0.5;
-  shackleNodes.rotation.z = Math.PI;
-
-  lockGroup.add(shackle);
-  lockGroup.add(shackleNodes);
-
-  // Keyhole (Cylinder)
-  const keyholeGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.25, 6);
-  keyholeGeom.rotateX(Math.PI / 2);
-  const keyhole = new THREE.Mesh(keyholeGeom, wireframeMat);
-  keyhole.position.set(0, -0.15, 0.15);
-  lockGroup.add(keyhole);
-
-  return lockGroup;
+const revealHeaderVariants = {
+  hidden: { opacity: 0, y: 35, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } 
+  }
 };
 
-// Helper to create a 3D wireframe Shield with glowing vertex nodes
-const createShieldMesh = (color: number) => {
-  const shieldGroup = new THREE.Group();
-
-  const wireframeMat = new THREE.MeshBasicMaterial({
-    color: color,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.35
-  });
-
-  const nodePointMat = new THREE.PointsMaterial({
-    color: 0xffffff,
-    size: 0.12,
-    transparent: true,
-    opacity: 0.9
-  });
-
-  // Shield Top Cap (Flat Cylinder)
-  const topGeom = new THREE.CylinderGeometry(0.9, 0.9, 0.25, 5, 1);
-  const topMesh = new THREE.Mesh(topGeom, wireframeMat);
-  const topNodes = new THREE.Points(topGeom, nodePointMat);
-  shieldGroup.add(topMesh);
-  shieldGroup.add(topNodes);
-
-  // Shield Body (Cone pointing downwards)
-  const bodyGeom = new THREE.ConeGeometry(0.9, 1.4, 5);
-  bodyGeom.rotateX(Math.PI); // rotate downwards
-  const bodyMesh = new THREE.Mesh(bodyGeom, wireframeMat);
-  const bodyNodes = new THREE.Points(bodyGeom, nodePointMat);
-  
-  bodyMesh.position.y = -0.7;
-  bodyNodes.position.y = -0.7;
-  
-  shieldGroup.add(bodyMesh);
-  shieldGroup.add(bodyNodes);
-
-  return shieldGroup;
+const cardFadeUpVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: (idx: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { 
+      type: "spring" as const, 
+      stiffness: 45, 
+      damping: 14,
+      delay: idx * 0.1 
+    }
+  })
 };
 
 // ==========================================
-// 1. THREE.JS 3D SCROLL-LINKED CYBER SKY (FULL SCREEN CINEMATIC)
+// 1. THREE.JS 3D FLOATING CUBE FIELD BACKDROP
 // ==========================================
 interface ThreeDBackgroundProps {
   mousePos: { x: number; y: number };
@@ -143,7 +86,7 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
       scrollRef.current.target = window.scrollY / scrollHeight;
     };
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // initialize
+    handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -157,293 +100,207 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
 
     // Scene & Camera
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xf8fafc, 0.015); // fade to slate white
+    // Dark fog to fade cubes into black space
+    scene.fog = new THREE.FogExp2(0x000000, 0.025);
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
-    camera.position.set(0, 2, 15);
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
+    camera.position.set(0, 0, 14);
 
-    // Alpha true for transparent WebGL rendering over the watermark image
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0); // fully transparent clear color
+    renderer.setClearColor(0x000000, 1);
     container.appendChild(renderer.domElement);
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x3b82f6, 1.2); 
-    dirLight.position.set(5, 12, 10);
-    scene.add(dirLight);
-
-    const pointLight = new THREE.PointLight(0x2563eb, 2.0, 60);
-    pointLight.position.set(0, 0, 5);
+    const pointLight = new THREE.PointLight(0x06b6d4, 3.5, 45); // light core power
+    pointLight.position.set(0, 0, 0);
     scene.add(pointLight);
 
-    // Starfield (Deep blue/teal points for light theme contrast)
-    const starsCount = 200;
-    const starsGeom = new THREE.BufferGeometry();
-    const starPositions = new Float32Array(starsCount * 3);
-    const starColors = new Float32Array(starsCount * 3);
+    const topLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    topLight.position.set(5, 10, 8);
+    scene.add(topLight);
 
-    for (let i = 0; i < starsCount; i++) {
-      starPositions[i * 3] = (Math.random() - 0.5) * 100;
-      starPositions[i * 3 + 1] = (Math.random() - 0.5) * 60 + 2;
-      starPositions[i * 3 + 2] = -Math.random() * 80;
-
-      const isTeal = Math.random() > 0.5;
-      starColors[i * 3] = isTeal ? 0.05 : 0.14; 
-      starColors[i * 3 + 1] = isTeal ? 0.58 : 0.38; 
-      starColors[i * 3 + 2] = isTeal ? 0.53 : 0.92; 
-    }
-
-    starsGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    starsGeom.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-
-    const starMat = new THREE.PointsMaterial({
-      size: 0.35,
-      vertexColors: true,
+    // 3D Metallic/Glass Cubes
+    const cubeCount = window.innerWidth < 768 ? 20 : 45;
+    const cubesGroup = new THREE.Group();
+    const cubeGeom = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+    
+    // Premium Metallic/Rough glass material for cubes
+    const cubeMaterial = new THREE.MeshStandardMaterial({
+      color: 0x06b6d4,
+      metalness: 0.9,
+      roughness: 0.15,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.45
     });
-    const starField = new THREE.Points(starsGeom, starMat);
-    scene.add(starField);
 
-    // Base Scrolling Grid Plane (Soft blue lines)
-    const gridHelper = new THREE.GridHelper(150, 50, 0x3b82f6, 0xe2e8f0);
-    gridHelper.position.y = -4;
-    scene.add(gridHelper);
+    const cubeData: {
+      mesh: THREE.Mesh;
+      speedX: number;
+      speedY: number;
+      speedZ: number;
+      rotX: number;
+      rotY: number;
+    }[] = [];
 
-    // 3D Digital Wireframe Mountains Terrain (Soft blue coordinates)
-    const terrainGeom = new THREE.PlaneGeometry(120, 120, 24, 24);
-    const posAttr = terrainGeom.attributes.position;
-    for (let i = 0; i < posAttr.count; i++) {
-      const x = posAttr.getX(i);
-      const y = posAttr.getY(i);
-      const z = Math.sin(x * 0.08) * Math.cos(y * 0.08) * 3.5 + Math.sin(x * 0.04) * 2.0;
-      posAttr.setZ(i, z);
-    }
-    terrainGeom.computeVertexNormals();
-    terrainGeom.rotateX(-Math.PI / 2);
-
-    const terrainMat = new THREE.MeshBasicMaterial({
-      color: 0x3b82f6,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.0 
-    });
-    const terrain = new THREE.Mesh(terrainGeom, terrainMat);
-    terrain.position.set(0, -6, -20);
-    scene.add(terrain);
-
-    // Floating Cyber Node Clouds (Locks and Shields representing network security layers)
-    const nodesGroup = new THREE.Group();
-    const nodeMeshes: THREE.Group[] = [];
-    const nodeCount = 10;
-
-    for (let i = 0; i < nodeCount; i++) {
-      const isLock = Math.random() > 0.5;
-      const meshColor = isLock ? 0x2563eb : 0x0d9488;
-      const mesh = isLock ? createLockMesh(meshColor) : createShieldMesh(meshColor);
-
+    for (let i = 0; i < cubeCount; i++) {
+      const scale = Math.random() * 0.9 + 0.3;
+      const mesh = new THREE.Mesh(cubeGeom, cubeMaterial.clone()); // separate material instance to vary specs
+      mesh.scale.set(scale, scale, scale);
+      
       mesh.position.set(
-        (Math.random() - 0.5) * 30,
-        (Math.random() - 0.5) * 12 + 1,
-        -Math.random() * 40 - 10
+        (Math.random() - 0.5) * 28,
+        (Math.random() - 0.5) * 16,
+        (Math.random() - 0.5) * 20 - 5
       );
-      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-      nodesGroup.add(mesh);
-      nodeMeshes.push(mesh);
+      
+      cubesGroup.add(mesh);
+      cubeData.push({
+        mesh,
+        speedX: (Math.random() - 0.5) * 0.2,
+        speedY: (Math.random() - 0.5) * 0.2,
+        speedZ: Math.random() * 0.4 + 0.15, // float forward
+        rotX: (Math.random() - 0.5) * 0.5 + 0.2,
+        rotY: (Math.random() - 0.5) * 0.4 + 0.2
+      });
     }
-    scene.add(nodesGroup);
+    scene.add(cubesGroup);
 
-    // Giant Security Core Orb (Blue wireframe)
-    const coreGeom = new THREE.IcosahedronGeometry(3.0, 1);
+    // Light Core Mesh (Rotating wireframe sphere inside light core)
+    const coreGeom = new THREE.IcosahedronGeometry(1.0, 1);
     const coreMat = new THREE.MeshBasicMaterial({
-      color: 0x2563eb,
+      color: 0x06b6d4,
       wireframe: true,
       transparent: true,
-      opacity: 0.0 
+      opacity: 0.5
     });
-    const securityCore = new THREE.Mesh(coreGeom, coreMat);
-    securityCore.position.set(0, 1, -10);
-    scene.add(securityCore);
+    const lightCore = new THREE.Mesh(coreGeom, coreMat);
+    scene.add(lightCore);
 
-    // 3D Wireframe Jet Plane (Rich Blue wireframe)
-    const jetGroup = new THREE.Group();
-    const jetMat = new THREE.MeshBasicMaterial({
-      color: 0x2563eb,
-      wireframe: true,
+    // Dual wireframe orbits around the core
+    const orbitRingGeom1 = new THREE.TorusGeometry(1.8, 0.02, 6, 24);
+    const orbitRingGeom2 = new THREE.TorusGeometry(2.2, 0.015, 6, 24);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.25 });
+    
+    const ring1 = new THREE.Mesh(orbitRingGeom1, ringMat);
+    const ring2 = new THREE.Mesh(orbitRingGeom2, ringMat);
+    
+    ring1.rotation.x = Math.PI / 4;
+    ring2.rotation.y = Math.PI / 3;
+    
+    scene.add(ring1);
+    scene.add(ring2);
+
+    // Particle streaks radiating outward from core (Emulate light warp)
+    const particleCount = window.innerWidth < 768 ? 30 : 65;
+    const particleGeom = new THREE.BufferGeometry();
+    const partPositions = new Float32Array(particleCount * 3);
+    const partSpeeds: number[] = [];
+
+    for (let i = 0; i < particleCount; i++) {
+      partPositions[i * 3] = 0;
+      partPositions[i * 3 + 1] = 0;
+      partPositions[i * 3 + 2] = 0;
+      partSpeeds.push(Math.random() * 4 + 1.5);
+    }
+
+    particleGeom.setAttribute('position', new THREE.BufferAttribute(partPositions, 3));
+    const partMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.08,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.7
     });
 
-    // Fuselage
-    const fuselageGeom = new THREE.CylinderGeometry(0.1, 0.7, 7, 5);
-    fuselageGeom.rotateX(Math.PI / 2);
-    const fuselage = new THREE.Mesh(fuselageGeom, jetMat);
-    jetGroup.add(fuselage);
+    const particles = new THREE.Points(particleGeom, partMaterial);
+    scene.add(particles);
 
-    // Nose
-    const noseGeom = new THREE.ConeGeometry(0.7, 2.2, 5);
-    noseGeom.rotateX(Math.PI / 2);
-    const nose = new THREE.Mesh(noseGeom, jetMat);
-    nose.position.z = 4.6;
-    jetGroup.add(nose);
-
-    // Left Wing
-    const wingLeftGeom = new THREE.ConeGeometry(2.2, 4.5, 3);
-    wingLeftGeom.rotateZ(Math.PI / 2);
-    wingLeftGeom.scale(1, 0.05, 1);
-    const wingLeft = new THREE.Mesh(wingLeftGeom, jetMat);
-    wingLeft.position.set(-1.8, 0, -0.5);
-    jetGroup.add(wingLeft);
-
-    // Right Wing
-    const wingRightGeom = new THREE.ConeGeometry(2.2, 4.5, 3);
-    wingRightGeom.rotateZ(-Math.PI / 2);
-    wingRightGeom.scale(1, 0.05, 1);
-    const wingRight = new THREE.Mesh(wingRightGeom, jetMat);
-    wingRight.position.set(2, 0, -0.5);
-    jetGroup.add(wingRight);
-
-    // Tail Fin
-    const finGeom = new THREE.ConeGeometry(0.5, 1.2, 3);
-    finGeom.rotateX(-Math.PI / 4);
-    finGeom.scale(0.05, 1, 1);
-    const fin = new THREE.Mesh(finGeom, jetMat);
-    fin.position.set(0, 0.7, -3.0);
-    jetGroup.add(fin);
-
-    scene.add(jetGroup);
-    jetGroup.position.set(0, 0.2, 5); 
-
-    // Animation variables
+    // Animation loop variables
     let clock = new THREE.Clock();
     let animId: number;
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
       const delta = clock.getDelta();
-      const elapsed = clock.getElapsedTime();
 
-      // Smoothly interpolate scroll ratio
+      // Lerp scroll ratio
       scrollRef.current.current = THREE.MathUtils.lerp(
         scrollRef.current.current,
         scrollRef.current.target,
-        0.05 
+        0.05
       );
       const sr = scrollRef.current.current;
+
+      // Color interpolation: Cyan (Digital) -> Amber (Printing)
+      const cyanColor = new THREE.Color(0x06b6d4);
+      const amberColor = new THREE.Color(0xf59e0b);
       
-      // Speed acceleration proportional to scroll speed
-      const scrollSpeedMultiplier = 1.0 + sr * 4.0;
-      gridHelper.position.z += delta * 12 * scrollSpeedMultiplier;
-      if (gridHelper.position.z > 6) gridHelper.position.z = 0;
+      // Interpolate theme color based on page scroll depth
+      const currentThemeColor = new THREE.Color().copy(cyanColor).lerp(
+        amberColor, 
+        THREE.MathUtils.clamp((sr - 0.4) * 2.5, 0, 1)
+      );
 
-      // Stars
-      const positions = starsGeom.attributes.position.array as Float32Array;
-      for (let i = 0; i < starsCount; i++) {
-        positions[i * 3 + 2] += delta * 16 * scrollSpeedMultiplier;
-        if (positions[i * 3 + 2] > 10) {
-          positions[i * 3 + 2] = -70;
-          positions[i * 3] = (Math.random() - 0.5) * 100;
-          positions[i * 3 + 1] = (Math.random() - 0.5) * 60 + 2;
+      // Apply theme color interpolation
+      pointLight.color.copy(currentThemeColor);
+      coreMat.color.copy(currentThemeColor);
+      ringMat.color.copy(currentThemeColor);
+      
+      // Rotate core and orbit rings
+      lightCore.rotation.y += delta * 0.3;
+      lightCore.rotation.x += delta * 0.15;
+      ring1.rotation.z += delta * 0.1;
+      ring2.rotation.z -= delta * 0.15;
+
+      // Expand particle streaks
+      const positions = particleGeom.attributes.position.array as Float32Array;
+      for (let i = 0; i < particleCount; i++) {
+        const angle = (i / particleCount) * Math.PI * 2;
+        const speed = partSpeeds[i] * delta * (1.0 + sr * 3.0);
+        
+        positions[i * 3] += Math.cos(angle) * speed;
+        positions[i * 3 + 1] += Math.sin(angle) * speed;
+        positions[i * 3 + 2] += (i % 2 === 0 ? 1 : -1) * 0.1 * speed;
+
+        const dist = Math.sqrt(positions[i * 3] ** 2 + positions[i * 3 + 1] ** 2);
+        if (dist > 12) {
+          positions[i * 3] = 0;
+          positions[i * 3 + 1] = 0;
+          positions[i * 3 + 2] = 0;
         }
       }
-      starsGeom.attributes.position.needsUpdate = true;
+      particleGeom.attributes.position.needsUpdate = true;
 
-      // ==========================================
-      // CONTINUOUS SCROLL-LINKED STORYBOARD PATHS
-      // ==========================================
+      // Drift and rotate cubes
+      cubeData.forEach((cube) => {
+        cube.mesh.position.z += delta * cube.speedZ * (1.0 + sr * 2.5);
+        cube.mesh.position.x += delta * cube.speedX;
+        cube.mesh.position.y += delta * cube.speedY;
 
-      // 1. Jet Plane takeoff & zoom (Scroll 0.0 to 0.35)
-      if (sr < 0.35) {
-        jetGroup.visible = true;
-        const planeZ = 5 - (sr / 0.35) * 35;
-        jetGroup.position.z = THREE.MathUtils.lerp(jetGroup.position.z, planeZ, 0.1);
-        
-        const planeRoll = -sr * Math.PI * 1.2;
-        const planePitch = sr * Math.PI * 0.2;
-        jetGroup.rotation.z = THREE.MathUtils.lerp(jetGroup.rotation.z, planeRoll, 0.1);
-        jetGroup.rotation.x = THREE.MathUtils.lerp(jetGroup.rotation.x, planePitch, 0.1);
-        
-        jetGroup.position.y = 0.2 + Math.sin(elapsed * 2.5) * 0.15;
-        jetGroup.position.x = Math.cos(elapsed * 1.5) * 0.1;
-      } else {
-        jetGroup.visible = false;
-      }
+        cube.mesh.rotation.x += delta * cube.rotX;
+        cube.mesh.rotation.y += delta * cube.rotY;
 
-      // 2. Scrolling digital mountain waves (Scroll 0.20 to 0.60)
-      if (sr >= 0.18 && sr <= 0.62) {
-        terrain.visible = true;
-        let opacity = 0;
-        if (sr < 0.35) {
-          opacity = (sr - 0.18) / 0.17;
-        } else {
-          opacity = 1.0 - (sr - 0.35) / 0.27;
-        }
-        terrainMat.opacity = opacity * 0.22;
-        
-        terrain.position.z += delta * 15;
-        if (terrain.position.z > 20) terrain.position.z = -40;
-      } else {
-        terrain.visible = false;
-      }
-
-      // 3. Floating Holographic Locks & Shields (Scroll 0.50 to 0.85)
-      if (sr >= 0.48 && sr <= 0.88) {
-        nodesGroup.visible = true;
-        let opacity = 0;
-        if (sr < 0.65) {
-          opacity = (sr - 0.48) / 0.17;
-        } else {
-          opacity = 1.0 - (sr - 0.65) / 0.23;
+        // Apply interpolated color to cubes
+        if (cube.mesh.material instanceof THREE.MeshStandardMaterial) {
+          cube.mesh.material.color.copy(currentThemeColor);
         }
 
-        // Apply opacity to children basic materials
-        nodeMeshes.forEach((mesh, idx) => {
-          mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
-              child.material.opacity = opacity * 0.35;
-            }
-            if (child instanceof THREE.Points && child.material instanceof THREE.PointsMaterial) {
-              child.material.opacity = opacity * 0.85;
-            }
-          });
+        // Loop cube boundary
+        if (cube.mesh.position.z > 8) {
+          cube.mesh.position.z = -18;
+          cube.mesh.position.x = (Math.random() - 0.5) * 28;
+          cube.mesh.position.y = (Math.random() - 0.5) * 16;
+        }
+      });
 
-          // Rotate and translate meshes down the cyber network sky
-          mesh.rotation.x += delta * 0.4 * (idx % 2 === 0 ? 1 : -1);
-          mesh.rotation.y += delta * 0.3;
-          mesh.position.z += delta * 9 * scrollSpeedMultiplier;
-          if (mesh.position.z > 10) {
-            mesh.position.z = -50;
-            mesh.position.x = (Math.random() - 0.5) * 30;
-          }
-        });
-      } else {
-        nodesGroup.visible = false;
-      }
-
-      // 4. Security Core Orb (Scroll 0.75 to 1.00)
-      if (sr >= 0.75) {
-        securityCore.visible = true;
-        const opacity = (sr - 0.75) / 0.25;
-        coreMat.opacity = Math.min(opacity * 0.35, 0.35);
-
-        securityCore.rotation.y += delta * 0.4;
-        securityCore.rotation.x += delta * 0.2;
-        
-        const coreScale = 1.0 + Math.sin(elapsed * 2.0) * 0.05 + (sr - 0.75) * 0.5;
-        securityCore.scale.set(coreScale, coreScale, coreScale);
-      } else {
-        securityCore.visible = false;
-      }
-
-      // 5. Cinematic camera flight path mapping
-      const targetCamX = mouseRef.current.x * 2.5;
-      const targetCamY = 2 + mouseRef.current.y * 1.5 - sr * 4.0;
-      const targetCamZ = 15 - sr * 6.0;
+      // Camera parallax movement
+      const targetCamX = mouseRef.current.x * 2.0;
+      const targetCamY = mouseRef.current.y * 1.5 - sr * 6.0; // Panning camera down with scroll
+      const targetCamZ = 14 - sr * 4.0; // Zooming camera closer
 
       camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
       camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
@@ -479,526 +336,33 @@ const ThreeDBackground: React.FC<ThreeDBackgroundProps> = ({ mousePos }) => {
 };
 
 // ==========================================
-// 2. STATS BAR: ROTATING NODAL GLOBE
+// BULK PRINT QUOTE SCHEMAS
 // ==========================================
-const StatGlobe3D: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(containerRef, { once: true });
-
-  useEffect(() => {
-    if (!isInView) return;
-    const container = containerRef.current;
-    if (!container) return;
-
-    const width = 80;
-    const height = 80;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-    camera.position.z = 4.5;
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
-
-    const globeGeom = new THREE.SphereGeometry(1.6, 12, 12);
-    const globeMat = new THREE.MeshBasicMaterial({
-      color: 0x2563eb, 
-      wireframe: true,
-      transparent: true,
-      opacity: 0.4
-    });
-    const globe = new THREE.Mesh(globeGeom, globeMat);
-    scene.add(globe);
-
-    const pointsMat = new THREE.PointsMaterial({
-      color: 0x0d9488, 
-      size: 0.12,
-      transparent: true,
-      opacity: 0.8
-    });
-    const points = new THREE.Points(globeGeom, pointsMat);
-    scene.add(points);
-
-    const ringGeom = new THREE.RingGeometry(2.0, 2.05, 24);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x0d9488,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.5
-    });
-    const ring = new THREE.Mesh(ringGeom, ringMat);
-    ring.rotation.x = Math.PI / 3;
-    scene.add(ring);
-
-    let animId: number;
-    const animate = () => {
-      animId = requestAnimationFrame(animate);
-      globe.rotation.y += 0.005;
-      globe.rotation.x += 0.002;
-      points.rotation.y += 0.005;
-      points.rotation.x += 0.002;
-      ring.rotation.z -= 0.008;
-      renderer.render(scene, camera);
-    };
-
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      if (container && renderer.domElement) {
-        container.removeChild(renderer.domElement);
-      }
-      scene.clear();
-    };
-  }, [isInView]);
-
-  return <div ref={containerRef} className="w-20 h-20 flex items-center justify-center pointer-events-none" />;
-};
-
-// ==========================================
-// 3. HEALTH CHECK: PULSING SECURITY CORE SHIELD
-// ==========================================
-interface SecurityShield3DProps {
-  yesCount: number;
-}
-
-const SecurityShield3D: React.FC<SecurityShield3DProps> = ({ yesCount }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const coreRef = useRef<THREE.Mesh | null>(null);
-  const ringRef = useRef<THREE.Mesh | null>(null);
-
-  useEffect(() => {
-    if (!coreRef.current || !ringRef.current) return;
-    
-    let colorHex = 0xe11d48; 
-    if (yesCount >= 4) {
-      colorHex = 0x0d9488; 
-    } else if (yesCount >= 2) {
-      colorHex = 0xd97706; 
-    }
-
-    const material = coreRef.current.material as THREE.MeshBasicMaterial;
-    material.color.setHex(colorHex);
-
-    const ringMat = ringRef.current.material as THREE.MeshBasicMaterial;
-    ringMat.color.setHex(colorHex);
-  }, [yesCount]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.z = 5;
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
-
-    const coreGeom = new THREE.IcosahedronGeometry(1.5, 1);
-    const coreMat = new THREE.MeshBasicMaterial({
-      color: 0xe11d48,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.6
-    });
-    const core = new THREE.Mesh(coreGeom, coreMat);
-    scene.add(core);
-    coreRef.current = core;
-
-    const pointsMat = new THREE.PointsMaterial({
-      color: 0x0f172a, 
-      size: 0.1,
-      transparent: true,
-      opacity: 0.8
-    });
-    const points = new THREE.Points(coreGeom, pointsMat);
-    scene.add(points);
-
-    const ringGeom = new THREE.TorusGeometry(2.1, 0.03, 8, 32);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xe11d48,
-      transparent: true,
-      opacity: 0.4
-    });
-    const ring = new THREE.Mesh(ringGeom, ringMat);
-    ring.rotation.x = Math.PI / 4;
-    scene.add(ring);
-    ringRef.current = ring;
-
-    let animId: number;
-    let clock = new THREE.Clock();
-
-    const animate = () => {
-      animId = requestAnimationFrame(animate);
-      const elapsed = clock.getElapsedTime();
-
-      let speedFactor = 2.5; 
-      if (yesCount >= 4) speedFactor = 0.6; 
-      else if (yesCount >= 2) speedFactor = 1.4; 
-
-      core.rotation.y += 0.005 * speedFactor;
-      core.rotation.x += 0.003 * speedFactor;
-      points.rotation.copy(core.rotation);
-      ring.rotation.z -= 0.003 * speedFactor;
-
-      const pulse = 1.0 + Math.sin(elapsed * (speedFactor * 2)) * 0.08;
-      core.scale.set(pulse, pulse, pulse);
-      points.scale.set(pulse, pulse, pulse);
-
-      renderer.render(scene, camera);
-    };
-
-    animate();
-
-    const handleResize = () => {
-      if (!containerRef.current) return;
-      const w = containerRef.current.clientWidth;
-      const h = containerRef.current.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animId);
-      if (container && renderer.domElement) {
-        container.removeChild(renderer.domElement);
-      }
-      scene.clear();
-    };
-  }, []);
-
-  return <div ref={containerRef} className="w-full h-64 flex items-center justify-center" />;
-};
-
-// ==========================================
-// 3.5 STATS BAR ANIMATED COUNTER
-// ==========================================
-interface CounterProps {
-  value: number;
-  prefix?: string;
-  suffix?: string;
-  decimals?: number;
-}
-
-const AnimatedCounter: React.FC<CounterProps> = ({ value, prefix = '', suffix = '', decimals = 0 }) => {
-  const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true });
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!isInView) return;
-
-    const duration = 2000;
-    const intervalTime = 16;
-    const totalSteps = duration / intervalTime;
-    const increment = value / totalSteps;
-    let currentStep = 0;
-
-    const timer = setInterval(() => {
-      currentStep++;
-      if (currentStep >= totalSteps) {
-        setCount(value);
-        clearInterval(timer);
-      } else {
-        setCount((prev) => Math.min(prev + increment, value));
-      }
-    }, intervalTime);
-
-    return () => clearInterval(timer);
-  }, [isInView, value]);
-
-  return (
-    <span ref={ref} className="font-mono text-3xl md:text-4xl font-extrabold text-[#0F172A] tracking-tight">
-      {prefix}
-      {count.toLocaleString('en-IN', {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      })}
-      {suffix}
-    </span>
-  );
-};
-
-// ==========================================
-// 4. PRODUCTS DATA ARRAY
-// ==========================================
-interface Product {
-  id: string;
-  name: string;
-  status: 'DEPLOYED' | 'PROTOTYPE';
-  badgeText: string;
-  category: 'Deployed' | 'Prototype';
-  subtitle: string;
-  description: string;
-  callout?: string;
-  achievements: string[];
-  tech: string[];
-  demoUrl?: string;
-  sourceUrl?: string;
-  restricted: boolean;
-}
-
-const products: Product[] = [
-  {
-    id: 'sentinel-ai',
-    name: 'Sentinel-AI',
-    status: 'PROTOTYPE',
-    badgeText: 'PROTOTYPE',
-    category: 'Prototype',
-    subtitle: 'Sovereign Email Intelligence & Fraud Forensics',
-    description: 'An advanced, IP-hardened email fraud detection framework using four-layer Sovereign Logic Fusion (SLF) — Structural Integrity Audit (SFA), DNA matching, Machine Learning ensembles, and Explainable AI (XAI). Flags threats via SHAP-interpreted Non-Linear Manipulation Entropy.',
-    achievements: [
-      'Adversarial Obfuscation Buster (AOB v3.0) detects invisible zero-width Unicode characters',
-      'SHAP-interpreted NLME metrics quantify urgency and greed triggers',
-      'Structural Forensic Audits (SFA) provide uncopyable algorithmic defense layer',
-      'Official patent filings secured for Sentinel-AI technologies'
-    ],
-    tech: ['Python', 'Flask', 'XGBoost', 'NLTK', 'Scikit', 'Cyber-Dark UI', 'AOB v3.0'],
-    demoUrl: '#',
-    sourceUrl: 'https://github.com/parasagarwal7342/Paravion-Technologies-Website-.git',
-    restricted: false
-  },
-  {
-    id: 'spa-platform',
-    name: 'SPA Enterprise Platform',
-    status: 'DEPLOYED',
-    badgeText: 'DEPLOYED',
-    category: 'Deployed',
-    subtitle: 'Official Distribution E-Commerce Core',
-    callout: 'First live client project — exclusively built and maintained by Paravion Tech for SPA Enterprises.',
-    description: 'A high-performance, three-portal enterprise e-commerce platform with customer shopping, secure role-based staff portal, and ownership analytics dashboard. B2B/B2C hybrid marketplace with Razorpay payment rails and AI-enhanced capabilities. Deployed on Vercel + Railway. This is the only live production deployment in the portfolio.',
-    achievements: [
-      'Multi-portal architecture for Customers, Staff, and Owners with distinct optimized UX',
-      'B2B/B2C hybrid marketplace with deeply integrated Razorpay payment rails',
-      'AI-enhanced platform via Anthropic Claude and OpenAI DALL·E 3 APIs',
-      'Production-ready deployment pipelines using Vercel and Railway infrastructure'
-    ],
-    tech: ['React 19', 'Vite', 'TypeScript', 'Fastify', 'Razorpay', 'Anthropic Claude'],
-    demoUrl: '#',
-    sourceUrl: 'https://github.com/parasagarwal7342/Paravion-Technologies-Website-.git',
-    restricted: false
-  },
-  {
-    id: 'shadowguard',
-    name: 'Paravion ShadowGuard v2.0',
-    status: 'PROTOTYPE',
-    badgeText: 'MVP COMPLETED',
-    category: 'Prototype',
-    subtitle: 'Sovereign AI Governance Platform',
-    description: "The world's most advanced software-only solution for enterprises to detect, control, and audit Shadow AI usage. Built with a Sovereign-First philosophy — intercepts real-time LLM prompt leakage across ChatGPT, Gemini, and Claude using a Python-based Neural Classification Engine.",
-    achievements: [
-      'CISO Command Center with Holographic Risk Gauges and real-time telemetry feeds',
-      'WASM-powered browser extension intercepts and secures network layer prompts',
-      'Neural Classification Engine with Logistic normalization for Threat Index calculation',
-      'Immutable Compliance Audit Agent mapped to SOC2 protocols'
-    ],
-    tech: ['Next.js', 'Python', 'Tailwind CSS', 'AI Security', 'SOC2 Automation'],
-    sourceUrl: 'https://github.com/parasagarwal7342/Paravion-Technologies-Website-.git',
-    restricted: false
-  },
-  {
-    id: 'hexguard-fim',
-    name: 'HexGuard FIM',
-    status: 'PROTOTYPE',
-    badgeText: 'MVP COMPLETED',
-    category: 'Prototype',
-    subtitle: 'Enterprise-Grade File Integrity Monitor',
-    description: 'High-performance File Integrity Monitor using deep system-level tracking to detect zero-day ransomware via kernel-level syscall tracing. Features SHA-256 cryptographic anchoring and algorithmic analytics for unconventional folder/file movement detection.',
-    achievements: [
-      'Kernel-level syscall tracing for real-time ransomware behavior detection',
-      'SHA-256 cryptographic anchoring ensures immutable system state logs',
-      'Advanced algorithmic analysis flags unconventional directory traversal patterns'
-    ],
-    tech: ['Python', 'PowerShell', 'Kernel-level Tracing', 'Ransomware Analytics', 'SHA-256 Crypto'],
-    sourceUrl: 'https://github.com/parasagarwal7342/Paravion-Technologies-Website-.git',
-    restricted: false
-  },
-  {
-    id: 'digital-shield',
-    name: 'Digital Shield v2.0',
-    status: 'PROTOTYPE',
-    badgeText: 'PROTOTYPE',
-    category: 'Prototype',
-    subtitle: 'Zero-Trust Fraud Prevention for Digital Payments',
-    description: 'Real-time security OS intercepting UPI/digital payment transactions before authorization. Features our custom UBS Engine: 14ms latency, 14.4M+ nodal points secured. 8 core patents pending. $3.5M Seed Round strategized for banking integration. Restricted — IP-sensitive.',
-    achievements: [
-      'Real-time OS interception layer blocking unauthorized UPI transactions',
-      'Ultra-low latency execution (14ms) powered by Paravion\'s UBS Engine',
-      'Multi-agent architecture analyzing user behavior models in real-time'
-    ],
-    tech: ['Node.js', 'React', 'Android Capacitor', 'Behavioral Mapping', 'Edge AI', 'RAG', 'Blockchain'],
-    restricted: true
-  },
-  {
-    id: 'returnshield',
-    name: 'ReturnShield',
-    status: 'PROTOTYPE',
-    badgeText: 'PROTOTYPE',
-    category: 'Prototype',
-    subtitle: 'AI-Powered Multi-Stage Return Fraud Protection',
-    description: 'Multi-tier return fraud prevention for enterprise sellers. Features pre-shipment video analytics, Polygon blockchain anchoring, and computer vision warehouse validation to address INR 40B+ annual industry loss. Offers 30-second seller verification via blockchain-anchored hashes.',
-    achievements: [
-      '3D spatial scanning and pre-shipment package verification using computer vision',
-      'Polygon blockchain ledger anchors cryptographic hashes of warehouse shipments',
-      'Mitigates multi-billion INR merchant losses through automated returns scoring'
-    ],
-    tech: ['TensorFlow', 'OpenCV', 'Polygon Blockchain', 'Python', 'Node.js', 'React', 'Mobile SDK'],
-    restricted: true
-  }
-];
-
-// ==========================================
-// 5. CONTACT FORM SCHEMA
-// ==========================================
-const contactSchema = z.object({
+const printQuoteSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number is required"),
-  inquiryType: z.string().min(1, "Please select an inquiry type"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  productType: z.string().min(1, "Product type selection is required"),
+  quantity: z.number().min(50, "Minimum order quantity is 50 units"),
+  deadline: z.string().min(1, "Delivery timeline target is required"),
+  finishOption: z.string().min(1, "Please select a materials finish")
 });
 
-type ContactFormInputs = z.infer<typeof contactSchema>;
+type PrintQuoteFormInputs = z.infer<typeof printQuoteSchema>;
 
 // ==========================================
-// 6. ANIMATION MOTION VARIANTS FOR SCROLL RHYTHM
-// ==========================================
-const revealHeaderVariants = {
-  hidden: { opacity: 0, y: 35, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1,
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } 
-  }
-};
-
-const cardLeftVariants = {
-  hidden: { opacity: 0, x: -60 },
-  visible: { 
-    opacity: 1, 
-    x: 0, 
-    transition: { type: "spring" as const, stiffness: 45, damping: 14 } 
-  }
-};
-
-const cardRightVariants = {
-  hidden: { opacity: 0, x: 60 },
-  visible: { 
-    opacity: 1, 
-    x: 0, 
-    transition: { type: "spring" as const, stiffness: 45, damping: 14 } 
-  }
-};
-
-const cardFadeUpVariants = {
-  hidden: { opacity: 0, y: 50 },
-  visible: (idx: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { 
-      type: "spring" as const, 
-      stiffness: 45, 
-      damping: 14,
-      delay: idx * 0.1 
-    }
-  })
-};
-
-// ==========================================
-// 7. MAIN HOME PAGE COMPONENT
+// MAIN APP COMPONENT
 // ==========================================
 export default function Home() {
   const { toast } = useToast();
-  const [filter, setFilter] = useState<'All' | 'Deployed' | 'Prototype'>('All');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [visitorCount, setVisitorCount] = useState<number | null>(null);
-
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  // Security Health Check State
-  const [assessmentAnswers, setAssessmentAnswers] = useState<boolean[]>([false, false, false, false, false]);
-
-  const questions = [
-    "Do you use two-factor authentication across your systems?",
-    "Are your software and systems regularly patched and updated?",
-    "Do you have a firewall and intrusion detection system?",
-    "Are employees trained to recognize phishing and social engineering?",
-    "Do you have an incident response plan for data breaches?"
-  ];
-
-  // Calculate live risk assessment
-  const yesCount = assessmentAnswers.filter(Boolean).length;
-  let riskStatus = "HIGH RISK";
-  let riskColor = "text-rose-600 border-rose-500/20 bg-rose-500/5";
-  let riskMessage = "Critical exposure. Contact us immediately.";
-
-  if (yesCount >= 4) {
-    riskStatus = "LOW RISK";
-    riskColor = "text-teal border-teal/20 bg-teal/5";
-    riskMessage = "Good posture. Let us take you to enterprise-grade.";
-  } else if (yesCount >= 2) {
-    riskStatus = "MEDIUM RISK";
-    riskColor = "text-amber-600 border-amber-500/20 bg-amber-500/5";
-    riskMessage = "Significant gaps remain. Let's fix them.";
-  }
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const x = (e.clientX / window.innerWidth) * 2 - 1;
     const y = -(e.clientY / window.innerHeight) * 2 + 1;
     setMousePos({ x, y });
-  };
-
-  // Live Visitor Counter
-  useEffect(() => {
-    fetch('https://api.counterapi.dev/v1/paravion-technologies/visits/up')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.count) {
-          setVisitorCount(data.count);
-        }
-      })
-      .catch((err) => {
-        console.error("CounterAPI fetch error, falling back to local simulation", err);
-        const simulated = localStorage.getItem('sim_visits') 
-          ? parseInt(localStorage.getItem('sim_visits')!) + 1 
-          : 12450;
-        localStorage.setItem('sim_visits', simulated.toString());
-        setVisitorCount(simulated);
-      });
-  }, []);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors }
-  } = useForm<ContactFormInputs>({
-    resolver: zodResolver(contactSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      inquiryType: '',
-      message: ''
-    }
-  });
-
-  const onSubmit = (data: ContactFormInputs) => {
-    console.log("Contact form submitted:", data);
-    toast("Message Sent Successfully — We will get back to you shortly.", "success");
-    reset();
   };
 
   const handleNavClick = (id: string) => {
@@ -1009,79 +373,99 @@ export default function Home() {
     }
   };
 
-  const toggleAssessment = (index: number) => {
-    setAssessmentAnswers((prev) => {
-      const next = [...prev];
-      next[index] = !next[index];
-      return next;
-    });
+  // Bulk Print Quoting Form Hooks
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors }
+  } = useForm<PrintQuoteFormInputs>({
+    resolver: zodResolver(printQuoteSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      productType: '',
+      quantity: 100,
+      deadline: '',
+      finishOption: ''
+    }
+  });
+
+  const onSubmitQuote = (data: PrintQuoteFormInputs) => {
+    console.log("Bulk Printing Quote Request:", data);
+    toast("Quote Request Submitted Successfully — A printing coordinator will call you back within 2 hours.", "success");
+    reset();
   };
 
-  const filteredProducts = products.filter(
-    (p) => filter === 'All' || p.category === filter
-  );
+  const faqs = [
+    { q: "What is your Minimum Order Quantity (MOQ) for printing?", a: "Our standard MOQ starts at 50 units for premium product boxes and hoodies, and 100 units for standard business cards or promotional brochures." },
+    { q: "Do you offer layout design support for bulk print orders?", a: "Yes! Our Digital division works directly with our Printing team to assist you with layout scaling, vector preparation, and spot-UV mapping files." },
+    { q: "What are your standard turnaround timelines?", a: "Digital services range from 1 to 4 weeks depending on structure. Bulk printing standard deliveries take 3 to 5 business days, with urgent 24-48 hour rush packaging options available." },
+    { q: "Can I receive material paper samples before placing an order?", a: "Yes, we ship premium sample kits showcasing matte laminates, soft-touch satin, and custom textured linen papers directly to your office on request." }
+  ];
 
   return (
     <div 
       onMouseMove={handleMouseMove}
-      className="relative min-h-screen text-[#0F172A] overflow-x-hidden font-sans"
+      className="relative min-h-screen bg-black text-[#FAFAFA] overflow-x-hidden font-sans select-none"
     >
-      {/* ==========================================
-          GLOBAL VIEWPORT FIXED 3D CINEMATIC BACKDROP
-          ========================================== */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none -z-10">
-        <ThreeDBackground mousePos={mousePos} />
+      {/* HUD Edge Graphics */}
+      <div className="fixed top-1/3 right-6 z-40 writing-mode-vertical hidden lg:flex items-center gap-3 text-[10px] font-mono text-zinc-500 tracking-[0.2em] pointer-events-none select-none">
+        <span className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse" />
+        SYSTEM ACTIVE // SECTOR: DIGITAL_PRINT_2026
       </div>
 
       {/* ==========================================
-          6.1 NAVBAR (Fixed Glassmorphic Header)
+          GLOBAL VIEWPORT FIXED 3D BACKGROUND
           ========================================== */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-md border-b border-slate-200/50 transition-all duration-300">
+      <div className="fixed inset-0 w-full h-full pointer-events-none -z-10">
+        <ThreeDBackground mousePos={mousePos} />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90 pointer-events-none" />
+      </div>
+
+      {/* ==========================================
+          NAVBAR (Fixed Cinematic Dark Panel)
+          ========================================== */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-900 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavClick('home')}>
-            <svg className="w-9 h-9" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#0D9488" />
-                  <stop offset="100%" stopColor="#2563EB" />
+                <linearGradient id="navHexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#06B6D4" />
+                  <stop offset="100%" stopColor="#F59E0B" />
                 </linearGradient>
               </defs>
-              <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#hexGrad)" />
-              <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#F8FAFC" />
-              <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#hexGrad)" />
+              <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#navHexGrad)" />
+              <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#000000" />
+              <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#navHexGrad)" />
             </svg>
-            <span className="text-[#0F172A] font-extrabold tracking-[0.2em] font-sans text-lg md:text-xl">
-              PARAVION <span className="text-teal font-light">TECHNOLOGIES</span>
+            <span className="text-white font-extrabold tracking-[0.25em] font-sans text-lg">
+              PARAVION <span className="text-teal font-light">STUDIOS</span>
             </span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
-            <button data-testid="nav-home" onClick={() => handleNavClick('home')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Home</button>
-            <button data-testid="nav-products" onClick={() => handleNavClick('products')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Products</button>
-            <button data-testid="nav-services" onClick={() => handleNavClick('services')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Services</button>
-            <button data-testid="nav-about" onClick={() => handleNavClick('about')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">About</button>
-            <button data-testid="nav-contact" onClick={() => handleNavClick('contact')} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Contact</button>
+            <button onClick={() => handleNavClick('home')} className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest">Home</button>
+            <button onClick={() => handleNavClick('digital-section')} className="text-xs font-semibold text-zinc-400 hover:text-teal transition-colors uppercase tracking-widest">Digital Services</button>
+            <button onClick={() => handleNavClick('print-section')} className="text-xs font-semibold text-zinc-400 hover:text-gold transition-colors uppercase tracking-widest">Printing Services</button>
+            <button onClick={() => handleNavClick('about')} className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest">About</button>
+            <button onClick={() => handleNavClick('contact')} className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest">Contact</button>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            {visitorCount !== null && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-xs text-teal font-mono animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal animate-ping" />
-                Network Visits: {visitorCount}
-              </div>
-            )}
             <button
-              data-testid="btn-nav-cta"
-              onClick={() => handleNavClick('contact')}
-              className="px-6 py-2.5 rounded-full bg-gold hover:bg-gold/90 text-white font-bold text-sm transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              onClick={() => handleNavClick('quote-form')}
+              className="px-6 py-2.5 rounded bg-zinc-900 border border-zinc-800 text-white font-semibold text-xs tracking-wider uppercase hover:bg-zinc-800 transition-colors cursor-pointer"
             >
-              Get Started
+              Order Portal
             </button>
           </div>
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-900 transition-colors"
+            className="md:hidden p-2 text-white"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -1093,293 +477,159 @@ export default function Home() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-slate-200 bg-white px-6 py-6 flex flex-col gap-5"
+              className="md:hidden border-t border-zinc-900 bg-black px-6 py-6 flex flex-col gap-5"
             >
-              <button onClick={() => handleNavClick('home')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">Home</button>
-              <button onClick={() => handleNavClick('products')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">Products</button>
-              <button onClick={() => handleNavClick('services')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">Services</button>
-              <button onClick={() => handleNavClick('about')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">About</button>
-              <button onClick={() => handleNavClick('contact')} className="text-left text-base font-semibold text-slate-700 hover:text-blue-600">Contact</button>
-              
-              <div className="h-px bg-slate-100 my-2" />
-              
-              {visitorCount !== null && (
-                <div className="flex items-center gap-2 self-start px-3 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-xs text-teal font-mono">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal animate-ping" />
-                  Visits: {visitorCount}
-                </div>
-              )}
-              <button
-                onClick={() => handleNavClick('contact')}
-                className="w-full py-3 rounded-full bg-gold text-white font-bold text-center transition-transform hover:scale-[1.02]"
-              >
-                Get Started
-              </button>
+              <button onClick={() => handleNavClick('home')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Home</button>
+              <button onClick={() => handleNavClick('digital-section')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Digital Services</button>
+              <button onClick={() => handleNavClick('print-section')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Printing Services</button>
+              <button onClick={() => handleNavClick('about')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">About</button>
+              <button onClick={() => handleNavClick('contact')} className="text-left text-sm uppercase tracking-widest font-semibold text-zinc-400">Contact</button>
+              <button onClick={() => handleNavClick('quote-form')} className="w-full py-3 rounded bg-zinc-900 border border-zinc-800 text-white font-bold text-center text-xs tracking-widest uppercase">Order Portal</button>
             </motion.div>
           )}
         </AnimatePresence>
       </nav>
 
       {/* ==========================================
-          6.2 HERO (Floating Full-Screen Clean Banner)
+          HERO SECTION (Split Headline layout)
           ========================================== */}
       <section id="home" className="relative min-h-screen w-full flex items-center pt-20 overflow-hidden bg-transparent">
-        <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center py-16">
-          <div className="lg:col-span-8 flex flex-col items-start text-left bg-white/75 backdrop-blur-md p-8 md:p-12 rounded-2xl border border-slate-200/50 shadow-2xl">
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="mb-5 px-4 py-1.5 rounded-full border border-teal/20 bg-teal/5 text-teal text-xs font-mono tracking-widest uppercase font-bold"
-            >
-              Indian Cyber Sovereignty // 2026
-            </motion.div>
+        
+        {/* Corner HUD marks */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="hud-corner-tl" />
+          <div className="hud-corner-tr" />
+          <div className="hud-corner-bl" />
+          <div className="hud-corner-br" />
+        </div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl md:text-7xl font-extrabold tracking-tight text-slate-900 mb-6 leading-[1.1] font-sans"
+        <div className="max-w-7xl mx-auto px-6 w-full relative z-10 flex flex-col justify-center min-h-[80vh]">
+          {/* Split Headline Design */}
+          <div className="flex flex-col items-start gap-1 mb-8">
+            <motion.h1 
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-5xl md:text-8xl lg:text-9xl font-black text-white tracking-tighter leading-none"
             >
-              Defend. Develop.<br />
-              <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">Dominate.</span>
+              EXPERIENCE THE
             </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base md:text-lg text-slate-600 max-w-2xl mb-10 leading-relaxed font-sans"
+            <motion.h1 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+              className="text-5xl md:text-8xl lg:text-9xl font-black text-transparent bg-gradient-to-r from-teal-400 to-amber-500 bg-clip-text tracking-tighter leading-none self-end"
             >
-              Paravion Technologies builds AI-powered cybersecurity systems and enterprise digital products that protect and scale modern businesses.
-            </motion.p>
+              IMPOSSIBLE.
+            </motion.h1>
+          </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="max-w-2xl text-zinc-400 text-sm md:text-base leading-relaxed mb-12 self-start border-l border-zinc-800 pl-6"
+          >
+            Paravion Studios is an award-winning digital engineering and physical bulk printing studio, delivering cinematic interactive platforms and high-volume brand production since 2026.
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex flex-col sm:flex-row gap-4 z-20"
+          >
+            <button
+              onClick={() => handleNavClick('digital-section')}
+              className="px-8 py-4 rounded bg-teal text-black font-extrabold text-xs uppercase tracking-widest hover:bg-teal-400 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg shadow-teal/20"
             >
-              <button
-                data-testid="btn-hero-products"
-                onClick={() => handleNavClick('products')}
-                className="px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg hover:shadow-blue-500/20 hover:scale-[1.03] text-center cursor-pointer"
-              >
-                View Our Products
-              </button>
-              <button
-                data-testid="btn-hero-contact"
-                onClick={() => handleNavClick('contact')}
-                className="px-8 py-4 rounded-xl border border-gold text-gold font-bold hover:bg-gold/5 transition-all hover:scale-[1.03] text-center cursor-pointer"
-              >
-                Secure Your Business
-              </button>
-            </motion.div>
+              Explore Digital Services
+            </button>
+            <button
+              onClick={() => handleNavClick('print-section')}
+              className="px-8 py-4 rounded border border-gold text-gold font-extrabold text-xs uppercase tracking-widest hover:bg-gold/5 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg shadow-gold/10"
+            >
+              Explore Bulk Printing
+            </button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          INTRO / DIVISIONS SECTION (01 / 02 Blocks)
+          ========================================== */}
+      <section className="py-24 max-w-7xl mx-auto px-6 z-20 relative border-t border-zinc-900 bg-black/60 backdrop-blur-md">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mb-16">
+          <div className="lg:col-span-5">
+            <h2 className="text-xs font-mono text-zinc-500 tracking-[0.25em] uppercase mb-4">Core Architecture</h2>
+            <h3 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">Two Divisions.<br />One Integrated Output.</h3>
+          </div>
+          <div className="lg:col-span-7">
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              We operate through two main creative divisions that work hand in hand. By combining custom software engineering with high-volume physical production pipelines, we build cohesive brand realities.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+          {/* Division 01 */}
+          <div className="p-8 rounded border border-zinc-950 bg-zinc-950/40 flex flex-col justify-between group hover:border-teal/30 transition-all duration-300">
+            <div>
+              <span className="text-6xl font-mono text-teal/10 font-bold block mb-6 group-hover:text-teal/25 transition-colors">01</span>
+              <h4 className="text-xl font-bold text-white mb-3">Digital Services</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+                Engineered web applications, digital branding, interactive user interfaces, organic search optimization, and cinematic motion production.
+              </p>
+            </div>
+            <button onClick={() => handleNavClick('digital-section')} className="text-xs text-teal font-mono tracking-widest uppercase inline-flex items-center gap-2 mt-8 hover:underline">
+              Enter Digital Sector <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Division 02 */}
+          <div className="p-8 rounded border border-zinc-950 bg-zinc-950/40 flex flex-col justify-between group hover:border-gold/30 transition-all duration-300">
+            <div>
+              <span className="text-6xl font-mono text-gold/10 font-bold block mb-6 group-hover:text-gold/25 transition-colors">02</span>
+              <h4 className="text-xl font-bold text-white mb-3">Printing Services</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+                High-volume bulk packaging prints, corporate merchandise, event exhibition signages, catalog books, and NFC smart paper technologies.
+              </p>
+            </div>
+            <button onClick={() => handleNavClick('print-section')} className="text-xs text-gold font-mono tracking-widest uppercase inline-flex items-center gap-2 mt-8 hover:underline">
+              Enter Print Sector <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          6.3 STATS BAR (6-column counters + 3D Globe)
+          DIGITAL SERVICES SECTION (Cyan Accent Glow)
           ========================================== */}
-      <section className="relative bg-slate-100/75 backdrop-blur-md border-y border-slate-200/50 py-12 z-20">
+      <section id="digital-section" className="py-28 bg-transparent relative z-20 border-t border-zinc-900">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-center items-center">
-            <div className="flex flex-col gap-1 items-center">
-              <StatGlobe3D />
-              <AnimatedCounter value={14.4} suffix="M+" decimals={1} />
-              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Nodal Points Secured</span>
-            </div>
-            <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-teal font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">14ms</div>
-              <AnimatedCounter value={14} suffix="ms" />
-              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">UBS Engine Latency</span>
-            </div>
-            <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-blue-600 font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">₹40B</div>
-              <AnimatedCounter value={40} prefix="INR " suffix="B+" />
-              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Fraud Prevented</span>
-            </div>
-            <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-gold font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">PAT</div>
-              <AnimatedCounter value={8} />
-              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Core Patents Pending</span>
-            </div>
-            <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-slate-500 font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">2026</div>
-              <AnimatedCounter value={5} />
-              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Products Built in 2026</span>
-            </div>
-            <div className="flex flex-col gap-1 items-center">
-              <div className="h-20 w-20 flex items-center justify-center text-green-600 font-mono text-xl border border-slate-200 bg-white rounded-full mb-2">LIVE</div>
-              <AnimatedCounter value={1} />
-              <span className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">Live Deployments</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          6.4 PRODUCTS SECTION (Light Theme Cards)
-          ========================================== */}
-      <section id="products" className="py-24 max-w-7xl mx-auto px-6 z-20 relative bg-transparent">
-        <motion.div 
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: false, margin: "-100px" }}
-          variants={revealHeaderVariants}
-          className="flex flex-col items-center text-center mb-16"
-        >
-          <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Our Products</h2>
-          <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">What We've Built</h3>
-          <p className="text-slate-600 max-w-2xl leading-relaxed">
-            From deployed enterprise platforms to advanced cybersecurity prototypes — every product is real, technical, and solving a critical problem.
-          </p>
-
-          <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-full mt-10">
-            {['All', 'Deployed', 'Prototype'].map((t) => (
-              <button
-                key={t}
-                data-testid={`filter-${t.toLowerCase()}`}
-                onClick={() => setFilter(t as any)}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${
-                  filter === t ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
-        <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <AnimatePresence mode="popLayout">
-            {filteredProducts.map((p, idx) => (
-              <motion.div
-                key={p.id}
-                layout
-                initial="hidden"
-                whileInView="visible"
-                exit={{ opacity: 0, scale: 0.95 }}
-                viewport={{ once: false, margin: "-80px" }}
-                variants={idx % 2 === 0 ? cardLeftVariants : cardRightVariants}
-                data-testid={`card-product-${p.id}`}
-                className="group relative flex flex-col justify-between p-8 rounded-2xl border border-slate-200/60 bg-white/85 hover:border-teal/50 hover:shadow-lg transition-all duration-300"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-mono text-gold tracking-widest font-bold uppercase">PARAVION TECH</span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider border ${
-                        p.status === 'DEPLOYED'
-                          ? 'bg-green-500/10 text-green-700 border-green-500/20'
-                          : 'bg-amber-500/10 text-amber-700 border-amber-500/20'
-                      }`}
-                    >
-                      {p.badgeText} · 2026
-                    </span>
-                  </div>
-
-                  {p.callout && (
-                    <div className="mb-4 p-3 rounded-lg border border-teal/15 bg-teal/5 text-teal text-xs italic font-semibold leading-relaxed">
-                      {p.callout}
-                    </div>
-                  )}
-
-                  <h4 className="text-2xl font-extrabold text-[#0F172A] mb-1 group-hover:text-blue-600 transition-colors">{p.name}</h4>
-                  <p className="text-xs font-mono text-gold mb-4 uppercase tracking-wider font-semibold">{p.subtitle}</p>
-                  
-                  <p className="text-sm text-slate-600 mb-6 leading-relaxed font-sans">{p.description}</p>
-
-                  <div className="mb-6 flex flex-col gap-2.5">
-                    {p.achievements.map((ach, id) => (
-                      <div key={id} className="flex gap-2 text-sm leading-relaxed">
-                        <span className="text-teal font-mono">▷</span>
-                        <span className="text-slate-600 font-sans">{ach}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {p.tech.map((t, id) => (
-                      <span
-                        key={id}
-                        className="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-[11px] font-mono text-slate-500"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-5 border-t border-slate-100 pt-4">
-                    {p.restricted ? (
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold font-mono">
-                        <Lock className="w-3.5 h-3.5" />
-                        Restricted Access
-                      </div>
-                    ) : (
-                      <>
-                        {p.sourceUrl && (
-                          <a
-                            href={p.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            data-testid={`link-${p.id}-source`}
-                            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 font-mono transition-colors font-semibold"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            Source Code
-                          </a>
-                        )}
-                        {p.demoUrl && (
-                          <a
-                            href={p.demoUrl}
-                            data-testid={`link-${p.id}-demo`}
-                            className="inline-flex items-center gap-1.5 text-xs text-teal hover:text-teal/80 font-mono transition-colors font-bold"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            Live Demo
-                          </a>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      </section>
-
-      {/* ==========================================
-          6.5 DIGITAL SERVICES
-          ========================================== */}
-      <section id="services" className="bg-transparent py-24 border-t border-slate-200/50 relative z-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div 
+          <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: false, margin: "-100px" }}
             variants={revealHeaderVariants}
             className="flex flex-col items-center text-center mb-16"
           >
-            <h2 className="text-xs font-mono text-teal tracking-[0.25em] uppercase mb-4">Enterprise Capabilities</h2>
-            <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">Digital Services</h3>
-            <p className="text-slate-600 max-w-2xl leading-relaxed">
-              We design, build, and deploy digital systems with a security-first posture, ensuring stability and performance at scale.
+            <span className="text-xs font-mono text-teal tracking-[0.25em] uppercase mb-4">Division 01 // Interactive Sector</span>
+            <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Digital Services</h2>
+            <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">
+              We construct digital ecosystems with modern frameworks, clean microservice APIs, and custom motion elements optimized for performance.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Services Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { title: "Website & Web App Development", icon: Globe, desc: "Highly responsive, state-of-the-art Single Page and Multi Page web applications built with React, Next.js, and lightweight fast backends." },
-              { title: "Mobile App Development", icon: Smartphone, desc: "Native and hybrid mobile application designs delivering flawless user experiences on iOS and Android with optimized secure transactions." },
-              { title: "Domain & Hosting Solutions", icon: Server, desc: "Reliable host configurations, SSL protection protocols, content delivery networks (CDNs), and high-availability server administration." },
-              { title: "Digital Marketing & SEO", icon: Megaphone, desc: "Data-driven SEO strategies, keyword optimization, analytics, and targeted marketing campaigns to maximize digital expansion." },
-              { title: "UI/UX Design", icon: Paintbrush, desc: "Premium, technical, and intuitive user interfaces that enhance branding, streamline interactions, and maximize user conversion." },
-              { title: "Cloud Infrastructure", icon: Cloud, desc: "Automated dev pipelines, high-density secure container deployments, microservices orchestration, and zero-downtime infrastructure." }
+              { icon: Globe, title: "Web Design & Development", desc: "Interactive Single Page Applications built with React, Vite, Tailwind CSS, and headless database layouts." },
+              { icon: Smartphone, title: "Mobile & Hybrid App Dev", desc: "Native experiences on iOS and Android with lightweight transaction layers and responsive screen sync." },
+              { icon: Paintbrush, title: "Branding & Identity System", desc: "Typography scales, visual guidelines, vector design libraries, and consistent color assets for web launch." },
+              { icon: Megaphone, title: "Digital Marketing & Copy", desc: "Strategic content assets, conversion funnel copywriting, and data pipelines to optimize lead conversion." },
+              { icon: Server, title: "Search Engine Optimization", desc: "Technical crawls, schema markup integration, keyword indexing, and high-domain speed audits." },
+              { icon: Cloud, title: "Video & Motion Editing", desc: "Cinematic promotional trailers, motion graphic logo animations, and optimized web-video sequences." }
             ].map((srv, idx) => (
               <motion.div
                 key={srv.title}
@@ -1388,346 +638,478 @@ export default function Home() {
                 whileInView="visible"
                 viewport={{ once: false, margin: "-60px" }}
                 variants={cardFadeUpVariants}
-                className="group p-8 rounded-2xl border border-slate-200/50 bg-white/80 hover:border-teal/45 transition-all duration-300 shadow-sm"
+                className="group p-8 rounded border border-zinc-900 bg-black/80 hover:border-teal/50 hover:glow-cyan transition-all duration-300"
               >
-                <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center text-teal mb-6 transition-transform group-hover:scale-110 duration-300">
+                <div className="w-12 h-12 rounded bg-teal/10 flex items-center justify-center text-teal mb-6 group-hover:scale-105 duration-300">
                   <srv.icon className="w-6 h-6" />
                 </div>
-                <h4 className="text-xl font-bold text-slate-900 mb-3">{srv.title}</h4>
-                <p className="text-sm text-slate-500 leading-relaxed font-sans">{srv.desc}</p>
+                <h4 className="text-lg font-bold text-white mb-3">{srv.title}</h4>
+                <p className="text-xs text-zinc-400 leading-relaxed font-sans">{srv.desc}</p>
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ==========================================
-          6.6 TECHNOLOGY STACK
-          ========================================== */}
-      <section id="stack" className="relative bg-slate-100/60 backdrop-blur-sm border-y border-slate-200/50 py-16 z-20">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <motion.h2 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, margin: "-100px" }}
-            variants={revealHeaderVariants}
-            className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-10 font-bold"
-          >
-            Advanced System Toolkit
-          </motion.h2>
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, margin: "-60px" }}
-            variants={revealHeaderVariants}
-            className="flex flex-wrap items-center justify-center gap-3.5 max-w-4xl mx-auto"
-          >
-            {[
-              'React', 'Next.js', 'Node.js', 'Python', 'TypeScript', 'TensorFlow', 'OpenCV',
-              'Polygon Blockchain', 'Razorpay', 'Anthropic Claude', 'XGBoost', 'Flask',
-              'Fastify', 'WASM', 'SHA-256', 'Edge AI', 'RAG'
-            ].map((tech) => (
-              <span
-                key={tech}
-                className="px-5 py-2.5 rounded-full border border-slate-200 bg-white/80 text-slate-600 font-mono text-sm tracking-wide transition-colors hover:border-teal/50 hover:text-slate-900 shadow-sm"
-              >
-                {tech}
-              </span>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          6.7 SECURITY HEALTH CHECK (Dynamic Shield)
-          ========================================== */}
-      <section id="assessment" className="py-24 max-w-6xl mx-auto px-6 z-20 relative bg-transparent">
-        <motion.div 
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: false, margin: "-100px" }}
-          variants={revealHeaderVariants}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/50 p-8 md:p-12 shadow-2xl items-center"
-        >
-          <div className="lg:col-span-7">
-            <div className="mb-8">
-              <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-2">Instant Evaluation</h2>
-              <h3 className="text-2xl md:text-4xl font-extrabold text-slate-900 mb-3">Security Health Check</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Evaluate your startup posture against standard threats. Toggle systems status below to feed real-time calculations into the core shield.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-4 border-t border-slate-100 pt-6">
-              {questions.map((q, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-4 p-3.5 rounded-xl border border-slate-200/40 bg-slate-50/50">
-                  <span className="text-xs md:text-sm text-slate-700 leading-relaxed font-semibold">{q}</span>
-                  <Switch
-                    id={`switch-assessment-${idx}`}
-                    checked={assessmentAnswers[idx]}
-                    onCheckedChange={() => toggleAssessment(idx)}
-                  />
+          {/* Digital Work Preview Gallery */}
+          <div className="mt-20">
+            <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-8 text-center">Interactive Previews</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { title: "UI Mockup v1", spec: "Figma File", src: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=400&q=80" },
+                { title: "Web Engine UI", spec: "React Framework", src: "https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=400&q=80" },
+                { title: "Visual Dashboard", spec: "Analytical Core", src: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
+                { title: "Mobile Wireframe", spec: "iOS Prototype", src: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" }
+              ].map((img, idx) => (
+                <div key={idx} className="relative aspect-video rounded overflow-hidden group border border-zinc-900 bg-zinc-950">
+                  <img src={img.src} alt={img.title} className="w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-500" />
+                  <div className="absolute inset-0 p-4 flex flex-col justify-end">
+                    <span className="text-[10px] font-mono text-teal font-bold">{img.spec}</span>
+                    <span className="text-xs font-bold text-white uppercase mt-0.5">{img.title}</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 border border-slate-200 bg-slate-50 rounded-xl text-center">
-            <SecurityShield3D yesCount={yesCount} />
-            
-            <div className="flex flex-col items-center gap-1 mt-4">
-              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">POSTURE INDEX</span>
-              <span className={`px-4 py-1.5 rounded-full border text-xs font-black tracking-widest uppercase font-mono mt-1 ${riskColor}`}>
-                {riskStatus}
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-600 font-medium my-4 max-w-xs">{riskMessage}</p>
-
+          <div className="flex justify-center mt-12">
             <button
-              data-testid="btn-assessment-cta"
-              onClick={() => handleNavClick('contact')}
-              className="w-full py-3 rounded-lg bg-gold hover:bg-gold/90 text-white font-bold text-xs tracking-wider transition-all shadow-md inline-flex items-center justify-center gap-2 hover:scale-[1.02] cursor-pointer"
+              onClick={() => handleNavClick('quote-form')}
+              className="px-8 py-3 rounded bg-zinc-900 border border-zinc-800 text-teal text-xs uppercase font-extrabold tracking-widest hover:bg-zinc-800 transition-all cursor-pointer"
             >
-              Talk to a Security Expert
-              <ArrowRight className="w-4 h-4" />
+              Get Digital Quote
             </button>
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ==========================================
-          6.8 ABOUT / VISION
+          PRINTING SERVICES SECTION (Amber Accent Glow)
           ========================================== */}
-      <section id="about" className="bg-transparent py-24 border-t border-slate-200/50 relative z-20">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          <motion.div 
+      <section id="print-section" className="py-28 bg-transparent relative z-20 border-t border-zinc-900">
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: false, margin: "-100px" }}
-            variants={cardLeftVariants}
-            className="lg:col-span-7 flex flex-col items-start"
+            variants={revealHeaderVariants}
+            className="flex flex-col items-center text-center mb-16"
           >
-            <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Startup Vision</h2>
-            <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">Sovereign-First Digital Architecture</h3>
-            <p className="text-slate-700 mb-6 leading-relaxed font-sans">
-              Founded in 2026, Paravion Technologies represents a critical pivot towards absolute digital sovereignty. We do not just build web apps or install security monitoring packages; we develop custom security operating components, blockchain anchors, and sandboxed AI structures that shield enterprises from systemic dependency and vulnerabilities.
-            </p>
-            <p className="text-slate-500 text-sm leading-relaxed font-sans mb-8">
-              Based in India, our mandate is to engineer credible, technical systems using modern toolchains. By infusing zero-trust verification rules at core system interfaces, we establish robust platforms capable of scaling while retaining absolute data privacy.
+            <span className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Division 02 // Production Sector</span>
+            <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Printing Services</h2>
+            <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">
+              Wholesale printing and industrial packaging. We manage complete print runs with strict color checks, premium paper finishes, and fast deliveries.
             </p>
           </motion.div>
 
-          <div className="lg:col-span-5 flex flex-col gap-6 w-full">
+          {/* Highlights bar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 max-w-4xl mx-auto text-center font-mono">
+            <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
+              <span className="text-gold text-lg font-bold block mb-1">24-48 HR</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Fast Turnaround Option</span>
+            </div>
+            <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
+              <span className="text-gold text-lg font-bold block mb-1">UP TO 40% OFF</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Volume Discounts</span>
+            </div>
+            <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
+              <span className="text-gold text-lg font-bold block mb-1">50 UNITS</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Low Minimum Orders</span>
+            </div>
+          </div>
+
+          {/* Services Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: BrainCircuit, color: "text-blue-600", border: "hover:border-blue-500/30", title: "AI-First Automation", desc: "Deep integration of Large Language Models (LLMs) and neural classifiers mapped directly to client environments." },
-              { icon: Shield, color: "text-teal", border: "hover:border-teal/30", title: "Zero-Trust Protocol", desc: "Systemic validation at every logical boundary, eliminating vulnerable assumptions in transaction processing pipelines." },
-              { icon: LinkIcon, color: "text-gold", border: "hover:border-gold/30", title: "Blockchain-Anchored Logs", desc: "Cryptographic ledger hashes establishing immutable, verifiable histories of transactional and server actions." }
-            ].map((p, idx) => (
+              { icon: FileText, title: "Business Cards & Stationery", desc: "Corporate business cards, letterheads, and customized card stock with embossing and gold foil stamping options." },
+              { icon: BookOpen, title: "Brochures & flyers", desc: "Folded pamphlets, product catalogs, brochures, and flyers on matte linen or high-gloss art paper." },
+              { icon: ImageIcon, title: "Banners & Signs", desc: "Pull-up event display standees, exhibition fabric backdrops, vinyl wall stickers, and expo banners." },
+              { icon: Box, title: "Custom Packaging", desc: "Branded product packaging box configurations, secure shipping tapes, and custom merchandise containers." },
+              { icon: Layers, title: "Wholesale Print Runs", desc: "Bulk offset publishing, corporate notebooks, training manuals, calendar sets, and marketing materials." },
+              { icon: Gift, title: "Custom Merchandise", desc: "Company branded welcome onboarding gift sets, hoodies, activewear, thermal bottles, and notebooks." }
+            ].map((srv, idx) => (
               <motion.div
-                key={p.title}
+                key={srv.title}
                 custom={idx}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: false, margin: "-60px" }}
                 variants={cardFadeUpVariants}
-                className={`flex gap-5 p-6 rounded-xl border border-slate-200 bg-white/80 ${p.border} transition-all duration-300 shadow-md`}
+                className="group p-8 rounded border border-zinc-900 bg-black/80 hover:border-gold/50 hover:glow-amber transition-all duration-300"
+              >
+                <div className="w-12 h-12 rounded bg-gold/10 flex items-center justify-center text-gold mb-6 group-hover:scale-105 duration-300">
+                  <srv.icon className="w-6 h-6" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-3">{srv.title}</h4>
+                <p className="text-xs text-zinc-400 leading-relaxed font-sans">{srv.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Materials Showcase */}
+          <div className="mt-20 p-8 rounded border border-zinc-900 bg-zinc-950/40">
+            <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-6 text-center">Available Finishes & Materials</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-center">
+              {[
+                { title: "Matte Laminate", desc: "Non-reflective look" },
+                { title: "Soft-Touch Satin", desc: "Velvety hand-feel" },
+                { title: "Spot UV Gloss", desc: "High-contrast shine" },
+                { title: "Textured Linen", desc: "Organic paper weave" },
+                { title: "Gold Foil Stamp", desc: "Premium metallic stamp" },
+                { title: "Recycled Kraft", desc: "Eco-friendly craft" }
+              ].map((mat, idx) => (
+                <div key={idx} className="p-3 border border-zinc-900 bg-black rounded">
+                  <span className="text-xs font-bold text-white block mb-0.5">{mat.title}</span>
+                  <span className="text-[10px] text-zinc-500 font-sans">{mat.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          REQUEST BULK QUOTE FORM (Custom Terminal UI)
+          ========================================== */}
+      <section id="quote-form" className="py-24 max-w-4xl mx-auto px-6 z-20 relative bg-transparent">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: false, margin: "-100px" }}
+          variants={revealHeaderVariants}
+          className="bg-black border border-zinc-900 rounded p-8 shadow-2xl relative"
+        >
+          {/* Form HUD marks */}
+          <div className="absolute top-4 right-4 flex items-center gap-1.5 text-[9px] font-mono text-zinc-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
+            ORDER_PORTAL_ONLINE
+          </div>
+
+          <h3 className="text-xs font-mono text-gold tracking-widest uppercase mb-2">Quoting Terminal</h3>
+          <h4 className="text-2xl font-bold text-white mb-6">Request Bulk Print / Service Quote</h4>
+          
+          <form onSubmit={handleSubmit(onSubmitQuote)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-gold" /> Full Name
+              </label>
+              <input
+                type="text"
+                {...register('name')}
+                placeholder="Vikram Sharma"
+                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
+              />
+              {errors.name && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.name.message}</p>}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-gold" /> Email Address
+              </label>
+              <input
+                type="email"
+                {...register('email')}
+                placeholder="v.sharma@enterprise.com"
+                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
+              />
+              {errors.email && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.email.message}</p>}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-gold" /> Phone Number
+              </label>
+              <input
+                type="tel"
+                {...register('phone')}
+                placeholder="+91 99999 88888"
+                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
+              />
+              {errors.phone && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.phone.message}</p>}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                Product Division
+              </label>
+              <div className="relative">
+                <select
+                  {...register('productType')}
+                  className="w-full bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold appearance-none font-mono"
+                >
+                  <option value="">-- Select Product type --</option>
+                  <option value="Custom Packaging Boxes">Custom Packaging Boxes</option>
+                  <option value="Stationery / Business Cards">Stationery / Business Cards</option>
+                  <option value="Event Banners / Signage">Event Banners / Signage</option>
+                  <option value="Corporate Merchandise">Corporate Merchandise</option>
+                  <option value="Digital Web Application">Digital Web Application</option>
+                  <option value="Brand Identity System">Brand Identity System</option>
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              </div>
+              {errors.productType && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.productType.message}</p>}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider">
+                Order Quantity
+              </label>
+              <input
+                type="number"
+                {...register('quantity', { valueAsNumber: true })}
+                placeholder="100"
+                className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
+              />
+              {errors.quantity && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.quantity.message}</p>}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider">
+                Target Deadline
+              </label>
+              <select
+                {...register('deadline')}
+                className="w-full bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold appearance-none font-mono"
+              >
+                <option value="">-- Choose Timeline --</option>
+                <option value="Urgent (24-48 Hours)">Urgent (24-48 Hours)</option>
+                <option value="Standard (3-5 Days)">Standard (3-5 Days)</option>
+                <option value="Flexible (1-2 Weeks)">Flexible (1-2 Weeks)</option>
+              </select>
+              {errors.deadline && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.deadline.message}</p>}
+            </div>
+
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider">
+                Materials Finish
+              </label>
+              <select
+                {...register('finishOption')}
+                className="w-full bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold appearance-none font-mono"
+              >
+                <option value="">-- Choose Finish Option --</option>
+                <option value="Matte Laminate Finish">Matte Laminate Finish</option>
+                <option value="Soft-Touch Satin Finish">Soft-Touch Satin Finish</option>
+                <option value="Spot UV Highlights">Spot UV Highlights</option>
+                <option value="Gold Foil Stamping">Gold Foil Stamping</option>
+                <option value="Not Applicable (Digital)">Not Applicable (Digital)</option>
+              </select>
+              {errors.finishOption && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.finishOption.message}</p>}
+            </div>
+
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label className="text-[10px] font-bold text-zinc-500 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5 text-gold" /> Upload Layout Artwork
+              </label>
+              <div className="border border-dashed border-zinc-800 rounded bg-zinc-950 p-6 text-center cursor-pointer hover:border-gold/50 transition-colors">
+                <span className="text-[11px] text-zinc-500 block font-mono">DRAG & DROP VECTOR FILE (.AI, .PDF, .EPS) OR CLICK TO BROWSE</span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="md:col-span-2 w-full py-4 rounded bg-gold hover:bg-gold/90 text-white font-extrabold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-gold/20"
+            >
+              Submit Order Request
+            </button>
+          </form>
+        </motion.div>
+      </section>
+
+      {/* ==========================================
+          SHARED TESTIMONIALS CAROUSEL
+          ========================================== */}
+      <section className="py-24 max-w-6xl mx-auto px-6 z-20 relative border-t border-zinc-900 bg-transparent">
+        <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-10 text-center">Client Testimonials</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {[
+            { quote: "Paravion's Digital team engineered our entire e-commerce portal in React while their Printing division produced 5,000 custom matte boxes in 4 days. Incredible cross-over workflow.", author: "Rajesh K., Founder of SPA Enterprises" },
+            { quote: "The NFC-enabled smart business cards are spectacular. Spot-UV styling is clean, and the transaction speed is seamless. Absolute corporate recommendation.", author: "Neha S., Brand Director at Lexis Legal" }
+          ].map((t, idx) => (
+            <div key={idx} className="p-8 rounded border border-zinc-900 bg-zinc-950/40 font-sans italic text-sm text-zinc-300 leading-relaxed flex flex-col justify-between">
+              <p>"{t.quote}"</p>
+              <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider font-bold mt-6 block">— {t.author}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ==========================================
+          SHARED FAQ SECTION (Accordion)
+          ========================================== */}
+      <section className="py-24 max-w-4xl mx-auto px-6 z-20 relative border-t border-zinc-900 bg-transparent">
+        <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-10 text-center">Frequently Asked Questions</h3>
+        
+        <div className="flex flex-col gap-4">
+          {faqs.map((faq, idx) => (
+            <div key={idx} className="border border-zinc-900 bg-zinc-950/40 rounded overflow-hidden">
+              <button
+                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                className="w-full p-5 flex items-center justify-between text-left font-bold text-sm uppercase tracking-wide text-white hover:bg-zinc-900 transition-colors"
+              >
+                <span>{faq.q}</span>
+                <span className="text-zinc-500 font-mono">{activeFaq === idx ? '[-]' : '[+]'}</span>
+              </button>
+              
+              <AnimatePresence>
+                {activeFaq === idx && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="border-t border-zinc-900 bg-black/60 px-5 py-4 text-xs text-zinc-400 leading-relaxed font-sans"
+                  >
+                    {faq.a}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ==========================================
+          SHARED ABOUT SECTION
+          ========================================== */}
+      <section id="about" className="py-28 bg-transparent relative z-20 border-t border-zinc-900">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          <div className="lg:col-span-7 flex flex-col items-start">
+            <span className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Studio Mandate</span>
+            <h3 className="text-3xl md:text-5xl font-black text-white mb-6">Cinematic Delivery & Bulk Packaging</h3>
+            <p className="text-zinc-400 mb-6 leading-relaxed text-sm font-sans">
+              Founded in 2026, Paravion Studios represents a unique combination of pixel-perfect digital software engineering and industrial packaging printing capability. We believe visual consistency across web interfaces and physical packaging materials is paramount for modern brands.
+            </p>
+            <p className="text-zinc-500 text-xs leading-relaxed font-sans">
+              Headquartered in New Delhi, India, our print warehouse handles large-scale runs using advanced offset machinery, while our digital lab crafts bespoke front-ends and cloud pipelines.
+            </p>
+          </div>
+
+          <div className="lg:col-span-5 flex flex-col gap-6 w-full">
+            {[
+              { icon: BrainCircuit, color: "text-teal", title: "Web Architecture Labs", desc: "Engineered web structures utilizing React, Node, and Tailwind frameworks." },
+              { icon: Shield, color: "text-blue-500", title: "Industrial Print Warehouse", desc: "High-volume packaging box prints, custom tapes, and merchandise catalogs." },
+              { icon: LinkIcon, color: "text-gold", title: "Smart Paper Solutions", desc: "NFC smart cards, RFID tag overlays, and security holographic labels." }
+            ].map((p) => (
+              <div
+                key={p.title}
+                className="flex gap-5 p-6 rounded border border-zinc-900 bg-zinc-950/40 shadow-sm"
               >
                 <div className={`${p.color} mt-0.5`}>
                   <p.icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold text-slate-900 mb-1.5">{p.title}</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed font-sans">{p.desc}</p>
+                  <h4 className="text-base font-bold text-white mb-1.5">{p.title}</h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed font-sans">{p.desc}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          6.9 CONTACT
+          CONTACT SECTION (Direct connections)
           ========================================== */}
-      <section id="contact" className="py-24 max-w-7xl mx-auto px-6 z-20 relative bg-transparent">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, margin: "-100px" }}
-            variants={cardLeftVariants}
-            className="lg:col-span-5 flex flex-col items-start justify-center"
-          >
-            <h2 className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Direct Connection</h2>
-            <h3 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">Contact Us</h3>
-            <p className="text-slate-700 leading-relaxed mb-8">
-              Discuss enterprise integration, request audits for your products, or coordinate strategic project partnerships.
+      <section id="contact" className="py-24 max-w-7xl mx-auto px-6 z-20 relative bg-transparent border-t border-zinc-900">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+          <div className="flex flex-col items-start justify-center">
+            <span className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Direct Connection</span>
+            <h3 className="text-3xl md:text-5xl font-black text-white mb-6">Contact Us</h3>
+            <p className="text-zinc-400 leading-relaxed text-sm mb-8">
+              Discuss bulk orders, schedule paper finish sampling, or request developer evaluations for custom software systems.
             </p>
 
-            <div className="flex flex-col gap-5 text-sm font-mono text-slate-700">
+            <div className="flex flex-col gap-5 text-sm font-mono text-zinc-400">
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold">WHATSAPP / PHONE</span>
-                <a href="https://wa.me/917011991268" target="_blank" rel="noopener noreferrer" className="text-slate-900 hover:text-blue-600 font-bold transition-colors">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">WHATSAPP / PHONE</span>
+                <a href="https://wa.me/917011991268" target="_blank" rel="noopener noreferrer" className="text-white hover:text-teal font-bold transition-colors">
                   +91 7011991268
                 </a>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold">EMAIL CORRESPONDENCE</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">EMAIL CORRESPONDENCE</span>
                 <a href="mailto:paraviontechnologies@gmail.com" className="text-teal hover:underline font-bold transition-colors">
                   paraviontechnologies@gmail.com
                 </a>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold">HEADQUARTERS</span>
-                <span className="text-slate-900 font-bold">New Delhi, India</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">STUDIO HEADQUARTERS</span>
+                <span className="text-white">New Delhi, India</span>
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, margin: "-80px" }}
-            variants={cardRightVariants}
-            className="lg:col-span-7 bg-white/90 backdrop-blur-md border border-slate-200/80 p-8 rounded-2xl shadow-2xl"
-          >
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">FULL NAME</label>
-                <input
-                  type="text"
-                  data-testid="input-name"
-                  {...register('name')}
-                  placeholder="e.g. Vikram Sharma"
-                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
-                />
-                {errors.name && <p className="text-xs text-red-500 font-medium">{errors.name.message}</p>}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">EMAIL ADDRESS</label>
-                <input
-                  type="email"
-                  data-testid="input-email"
-                  {...register('email')}
-                  placeholder="e.g. v.sharma@enterprise.com"
-                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
-                />
-                {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">PHONE NUMBER</label>
-                <input
-                  type="tel"
-                  data-testid="input-phone"
-                  {...register('phone')}
-                  placeholder="e.g. +91 99999 88888"
-                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
-                />
-                {errors.phone && <p className="text-xs text-red-500 font-medium">{errors.phone.message}</p>}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">INQUIRY TYPE</label>
-                <div className="relative">
-                  <select
-                    data-testid="select-inquiry"
-                    {...register('inquiryType')}
-                    className="w-full appearance-none bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors pr-10"
-                  >
-                    <option value="">-- Select Inquiry Type --</option>
-                    <option value="Cybersecurity Product">Cybersecurity Product</option>
-                    <option value="Digital Service">Digital Service</option>
-                    <option value="Partnership">Partnership</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-                {errors.inquiryType && <p className="text-xs text-red-500 font-medium">{errors.inquiryType.message}</p>}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-500 font-mono tracking-wider">MESSAGE DESCRIPTION</label>
-                <textarea
-                  data-testid="input-message"
-                  {...register('message')}
-                  rows={4}
-                  placeholder="Describe your security details or product goals in detail..."
-                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors resize-none"
-                />
-                {errors.message && <p className="text-xs text-red-500 font-medium">{errors.message.message}</p>}
-              </div>
-
-              <button
-                type="submit"
-                data-testid="btn-submit-contact"
-                className="w-full py-4 rounded-xl bg-gold hover:bg-gold/90 text-white font-bold text-sm tracking-wide transition-all shadow-lg hover:scale-[1.01] active:scale-95 cursor-pointer"
-              >
-                Send Message →
-              </button>
-            </form>
-          </motion.div>
+          <div className="p-8 rounded border border-zinc-900 bg-zinc-950/40 text-center flex flex-col items-center justify-center">
+            <HelpCircle className="w-12 h-12 text-gold mb-4" />
+            <h4 className="text-lg font-bold text-white mb-2 uppercase tracking-wide">Have Design Vector Files?</h4>
+            <p className="text-xs text-zinc-400 max-w-sm mb-6 leading-relaxed">
+              If you already have your print layout vectors ready, click the Order Portal to upload them directly with your quoting details.
+            </p>
+            <button
+              onClick={() => handleNavClick('quote-form')}
+              className="px-6 py-3 rounded bg-gold text-white font-extrabold text-xs uppercase tracking-widest hover:bg-gold/90 transition-all cursor-pointer"
+            >
+              Open Quoting Terminal
+            </button>
+          </div>
         </div>
       </section>
 
       {/* ==========================================
-          6.10 FOOTER (Slate/Dark grounding theme contrast)
+          FOOTER (Grounding Dark Layout)
           ========================================== */}
-      <footer className="bg-slate-900 text-white border-t border-slate-800 py-16 relative z-20">
+      <footer className="bg-black border-t border-zinc-900 py-16 relative z-20 text-zinc-400">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-left mb-12">
           <div className="flex flex-col items-start gap-4">
             <div className="flex items-center gap-3">
               <svg className="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#hexGrad)" />
-                <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#0f172a" />
-                <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#hexGrad)" />
+                <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="url(#navHexGrad)" />
+                <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="#000000" />
+                <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#navHexGrad)" />
               </svg>
               <span className="text-white font-extrabold tracking-wider font-sans text-lg">
-                PARAVION TECHNOLOGIES
+                PARAVION STUDIOS
               </span>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xs">
-              Think Big. Build Secure. Grow Digital. Dedicated to Sovereign-First AI infrastructure and digital product engineering.
+            <p className="text-xs text-zinc-500 leading-relaxed font-sans max-w-xs">
+              Think Big. Build Secure. Grow Digital. Dedicated to integrated digital design systems and high-volume industrial printing.
             </p>
           </div>
 
           <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">NAVIGATION</span>
-            <button data-testid="footer-products" onClick={() => handleNavClick('products')} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer">Products</button>
-            <button data-testid="footer-services" onClick={() => handleNavClick('services')} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer">Services</button>
-            <button data-testid="footer-about" onClick={() => handleNavClick('about')} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer">About</button>
-            <button data-testid="footer-contact" onClick={() => handleNavClick('contact')} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer">Contact</button>
+            <button onClick={() => handleNavClick('digital-section')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Digital Division</button>
+            <button onClick={() => handleNavClick('print-section')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Printing Division</button>
+            <button onClick={() => handleNavClick('about')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">About Studio</button>
+            <button onClick={() => handleNavClick('contact')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Contact</button>
           </div>
 
           <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">COMMUNICATION</span>
-            <span className="text-sm text-slate-400 font-mono">+91 7011991268</span>
+            <span className="text-sm text-zinc-500 font-mono">+91 7011991268</span>
             <span className="text-sm text-teal font-mono">paraviontechnologies@gmail.com</span>
-            <span className="text-sm text-slate-400 font-sans">New Delhi, India</span>
+            <span className="text-sm text-zinc-500 font-sans font-bold">New Delhi, India</span>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-slate-500 font-sans">
-            © 2026 Paravion Technologies. All Rights Reserved.
+        <div className="max-w-7xl mx-auto px-6 border-t border-zinc-900 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-zinc-650 font-sans">
+            © 2026 Paravion Technologies / Studios. All Rights Reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs font-mono text-slate-500">
-            <span>Sovereign-First Philosophy</span>
+          <div className="flex items-center gap-4 text-xs font-mono text-zinc-600">
+            <span>Integrated Studio Model</span>
             <span>·</span>
-            <span className="flex items-center gap-1.5 animate-pulse">
+            <span className="flex items-center gap-1.5">
               <Eye className="w-3.5 h-3.5 text-teal" />
-              Real-time Global Visits: {visitorCount ?? '...'}
+              Sovereign Production Pipeline
             </span>
           </div>
         </div>
       </footer>
 
       {/* ==========================================
-          6.11 FLOATING WHATSAPP BUTTON
+          FLOATING WHATSAPP BUTTON
           ========================================== */}
       <a
-        data-testid="btn-whatsapp-floating"
         href="https://wa.me/917011991268"
         target="_blank"
         rel="noopener noreferrer"
