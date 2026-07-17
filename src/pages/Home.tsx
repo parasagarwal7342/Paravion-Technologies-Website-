@@ -9,27 +9,22 @@ import {
   Smartphone,
   Server,
   Megaphone,
-  Paintbrush,
-  Cloud,
   BrainCircuit,
   Shield,
-  Link as LinkIcon,
   ChevronDown,
   ArrowRight,
   Menu,
   X,
   Eye,
-  FileText,
-  Gift,
-  Box,
   Image as ImageIcon,
   BookOpen,
-  Layers,
   HelpCircle,
   Upload,
   User,
   Mail,
-  Phone
+  Phone,
+  Printer,
+  Copy
 } from 'lucide-react';
 import { SiWhatsapp } from 'react-icons/si';
 import { useToast } from '../components/ui/toast';
@@ -343,7 +338,7 @@ const printQuoteSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
   productType: z.string().min(1, "Product type selection is required"),
-  quantity: z.number().min(50, "Minimum order quantity is 50 units"),
+  quantity: z.number().min(1, "Quantity must be at least 1 unit"),
   deadline: z.string().min(1, "Delivery timeline target is required"),
   finishOption: z.string().min(1, "Please select a materials finish")
 });
@@ -386,7 +381,7 @@ export default function Home() {
       email: '',
       phone: '',
       productType: '',
-      quantity: 100,
+      quantity: 1,
       deadline: '',
       finishOption: ''
     }
@@ -399,10 +394,10 @@ export default function Home() {
   };
 
   const faqs = [
-    { q: "What is your Minimum Order Quantity (MOQ) for printing?", a: "Our standard MOQ starts at 50 units for premium product boxes and hoodies, and 100 units for standard business cards or promotional brochures." },
-    { q: "Do you offer layout design support for bulk print orders?", a: "Yes! Our Digital division works directly with our Printing team to assist you with layout scaling, vector preparation, and spot-UV mapping files." },
-    { q: "What are your standard turnaround timelines?", a: "Digital services range from 1 to 4 weeks depending on structure. Bulk printing standard deliveries take 3 to 5 business days, with urgent 24-48 hour rush packaging options available." },
-    { q: "Can I receive material paper samples before placing an order?", a: "Yes, we ship premium sample kits showcasing matte laminates, soft-touch satin, and custom textured linen papers directly to your office on request." }
+    { q: "Do you have a minimum order quantity?", a: "No minimum order quantity! We accept single-page print and photocopy runs as well as high-volume spiral binding tasks." },
+    { q: "Do you offer formatting and layout support?", a: "Yes! Our team helps size custom photos, convert files to PDF format, and set up documents to ensure clean margins for spiral binding." },
+    { q: "What are your turnaround times?", a: "Photocopy, lamination, and spiral binding are completed same-day or within 24 hours. Digital design projects (websites, apps) range from 1 to 4 weeks." },
+    { q: "What paper sizes and finishes do you support?", a: "We print and photocopy on A3, A4, and A5 paper sizes. Lamination and photo prints are available in both glossy and matte finishes." }
   ];
 
   return (
@@ -442,7 +437,7 @@ export default function Home() {
               <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#navHexGrad)" />
             </svg>
             <span className="text-white font-extrabold tracking-[0.25em] font-sans text-lg">
-              PARAVION <span className="text-teal font-light">STUDIOS</span>
+              PARAVION <span className="text-teal font-light">TECHNOLOGIES</span>
             </span>
           </div>
 
@@ -530,7 +525,7 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="max-w-2xl text-zinc-400 text-sm md:text-base leading-relaxed mb-12 self-start border-l border-zinc-800 pl-6"
           >
-            Paravion Studios is an award-winning digital engineering and physical bulk printing studio, delivering cinematic interactive platforms and high-volume brand production since 2026.
+            Paravion Technologies is a premier printing, photocopy, and digital services studio delivering high-quality outputs and responsive web solutions.
           </motion.div>
 
           <motion.div
@@ -549,7 +544,7 @@ export default function Home() {
               onClick={() => handleNavClick('print-section')}
               className="px-8 py-4 rounded border border-gold text-gold font-extrabold text-xs uppercase tracking-widest hover:bg-gold/5 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg shadow-gold/10"
             >
-              Explore Bulk Printing
+              Explore Printing Shop
             </button>
           </motion.div>
         </div>
@@ -566,7 +561,7 @@ export default function Home() {
           </div>
           <div className="lg:col-span-7">
             <p className="text-zinc-400 text-sm leading-relaxed">
-              We operate through two main creative divisions that work hand in hand. By combining custom software engineering with high-volume physical production pipelines, we build cohesive brand realities.
+              We operate through two main creative divisions that work hand in hand. By combining custom website and app engineering with high-quality printing, photocopy, and binding pipelines, we handle all your digital and physical production needs.
             </p>
           </div>
         </div>
@@ -578,7 +573,7 @@ export default function Home() {
               <span className="text-6xl font-mono text-teal/10 font-bold block mb-6 group-hover:text-teal/25 transition-colors">01</span>
               <h4 className="text-xl font-bold text-white mb-3">Digital Services</h4>
               <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                Engineered web applications, digital branding, interactive user interfaces, organic search optimization, and cinematic motion production.
+                Responsive modern website design, mobile app development, domain and hosting setup, and digital marketing to grow your brand online.
               </p>
             </div>
             <button onClick={() => handleNavClick('digital-section')} className="text-xs text-teal font-mono tracking-widest uppercase inline-flex items-center gap-2 mt-8 hover:underline">
@@ -590,9 +585,9 @@ export default function Home() {
           <div className="p-8 rounded border border-zinc-950 bg-zinc-950/40 flex flex-col justify-between group hover:border-gold/30 transition-all duration-300">
             <div>
               <span className="text-6xl font-mono text-gold/10 font-bold block mb-6 group-hover:text-gold/25 transition-colors">02</span>
-              <h4 className="text-xl font-bold text-white mb-3">Printing Services</h4>
+              <h4 className="text-xl font-bold text-white mb-3">Printing & Photocopy Shop</h4>
               <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                High-volume bulk packaging prints, corporate merchandise, event exhibition signages, catalog books, and NFC smart paper technologies.
+                Document printing, photocopy, protective lamination, professional spiral binding, and glossy/matte photo printing of all sizes.
               </p>
             </div>
             <button onClick={() => handleNavClick('print-section')} className="text-xs text-gold font-mono tracking-widest uppercase inline-flex items-center gap-2 mt-8 hover:underline">
@@ -624,12 +619,10 @@ export default function Home() {
           {/* Services Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: Globe, title: "Web Design & Development", desc: "Interactive Single Page Applications built with React, Vite, Tailwind CSS, and headless database layouts." },
-              { icon: Smartphone, title: "Mobile & Hybrid App Dev", desc: "Native experiences on iOS and Android with lightweight transaction layers and responsive screen sync." },
-              { icon: Paintbrush, title: "Branding & Identity System", desc: "Typography scales, visual guidelines, vector design libraries, and consistent color assets for web launch." },
-              { icon: Megaphone, title: "Digital Marketing & Copy", desc: "Strategic content assets, conversion funnel copywriting, and data pipelines to optimize lead conversion." },
-              { icon: Server, title: "Search Engine Optimization", desc: "Technical crawls, schema markup integration, keyword indexing, and high-domain speed audits." },
-              { icon: Cloud, title: "Video & Motion Editing", desc: "Cinematic promotional trailers, motion graphic logo animations, and optimized web-video sequences." }
+              { icon: Globe, title: "Website Design", desc: "Responsive, Modern & SEO Friendly websites built for speed and lead conversions." },
+              { icon: Smartphone, title: "App Development", desc: "Native and hybrid Android & iOS apps engineered with cross-platform frameworks." },
+              { icon: Server, title: "Domain & Hosting", desc: "Fast, secure, and reliable deployment systems with high uptime." },
+              { icon: Megaphone, title: "Digital Marketing", desc: "Strategic marketing campaigns and optimizations to grow your brand online." }
             ].map((srv, idx) => (
               <motion.div
                 key={srv.title}
@@ -703,28 +696,27 @@ export default function Home() {
           {/* Highlights bar */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 max-w-4xl mx-auto text-center font-mono">
             <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
-              <span className="text-gold text-lg font-bold block mb-1">24-48 HR</span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Fast Turnaround Option</span>
+              <span className="text-gold text-lg font-bold block mb-1">FAST SERVICE</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Quick Turnaround</span>
             </div>
             <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
-              <span className="text-gold text-lg font-bold block mb-1">UP TO 40% OFF</span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Volume Discounts</span>
+              <span className="text-gold text-lg font-bold block mb-1">AFFORDABLE PRICES</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Best Quality at Best Prices</span>
             </div>
             <div className="p-4 border border-zinc-900 bg-zinc-950/40 rounded">
-              <span className="text-gold text-lg font-bold block mb-1">50 UNITS</span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Low Minimum Orders</span>
+              <span className="text-gold text-lg font-bold block mb-1">NEAT & CLEAN</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Clean, Professional & Reliable</span>
             </div>
           </div>
 
           {/* Services Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: FileText, title: "Business Cards & Stationery", desc: "Corporate business cards, letterheads, and customized card stock with embossing and gold foil stamping options." },
-              { icon: BookOpen, title: "Brochures & flyers", desc: "Folded pamphlets, product catalogs, brochures, and flyers on matte linen or high-gloss art paper." },
-              { icon: ImageIcon, title: "Banners & Signs", desc: "Pull-up event display standees, exhibition fabric backdrops, vinyl wall stickers, and expo banners." },
-              { icon: Box, title: "Custom Packaging", desc: "Branded product packaging box configurations, secure shipping tapes, and custom merchandise containers." },
-              { icon: Layers, title: "Wholesale Print Runs", desc: "Bulk offset publishing, corporate notebooks, training manuals, calendar sets, and marketing materials." },
-              { icon: Gift, title: "Custom Merchandise", desc: "Company branded welcome onboarding gift sets, hoodies, activewear, thermal bottles, and notebooks." }
+              { icon: Printer, title: "Printing Services", desc: "High-quality black & white and color prints for documents, reports, assignments, and presentations." },
+              { icon: Copy, title: "Photocopy Shop", desc: "Single or multiple high-speed photocopies available in A3, A4, A5, and all custom sizes." },
+              { icon: Shield, title: "Protective Lamination", desc: "Glossy and matte protective seal sheets in all dimensions to shield and preserve your documents." },
+              { icon: BookOpen, title: "Spiral Binding", desc: "Professional spiral binding with a strong, durable finish for projects, school reports, and reports." },
+              { icon: ImageIcon, title: "Photo Printing", desc: "Vibrant photo prints across A3, A4, A5, 4x6, and custom frames with glossy or matte finishes." }
             ].map((srv, idx) => (
               <motion.div
                 key={srv.title}
@@ -749,12 +741,12 @@ export default function Home() {
             <h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-6 text-center">Available Finishes & Materials</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-center">
               {[
-                { title: "Matte Laminate", desc: "Non-reflective look" },
-                { title: "Soft-Touch Satin", desc: "Velvety hand-feel" },
-                { title: "Spot UV Gloss", desc: "High-contrast shine" },
-                { title: "Textured Linen", desc: "Organic paper weave" },
-                { title: "Gold Foil Stamp", desc: "Premium metallic stamp" },
-                { title: "Recycled Kraft", desc: "Eco-friendly craft" }
+                { title: "Glossy Lamination", desc: "Protect and preserve documents" },
+                { title: "Matte Lamination", desc: "Non-reflective clean finish" },
+                { title: "Glossy Photo Paper", desc: "Vibrant high-contrast photo finish" },
+                { title: "Matte Photo Paper", desc: "Classic non-glare photo prints" },
+                { title: "Heavy Bond Paper", desc: "Sturdy feel for premium reports" },
+                { title: "Colored Stock", desc: "Vibrant custom paper layouts" }
               ].map((mat, idx) => (
                 <div key={idx} className="p-3 border border-zinc-900 bg-black rounded">
                   <span className="text-xs font-bold text-white block mb-0.5">{mat.title}</span>
@@ -784,7 +776,7 @@ export default function Home() {
           </div>
 
           <h3 className="text-xs font-mono text-gold tracking-widest uppercase mb-2">Quoting Terminal</h3>
-          <h4 className="text-2xl font-bold text-white mb-6">Request Bulk Print / Service Quote</h4>
+          <h4 className="text-2xl font-bold text-white mb-6">Request Printing & Digital Quote</h4>
           
           <form onSubmit={handleSubmit(onSubmitQuote)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
@@ -836,12 +828,15 @@ export default function Home() {
                   className="w-full bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold appearance-none font-mono"
                 >
                   <option value="">-- Select Product type --</option>
-                  <option value="Custom Packaging Boxes">Custom Packaging Boxes</option>
-                  <option value="Stationery / Business Cards">Stationery / Business Cards</option>
-                  <option value="Event Banners / Signage">Event Banners / Signage</option>
-                  <option value="Corporate Merchandise">Corporate Merchandise</option>
-                  <option value="Digital Web Application">Digital Web Application</option>
-                  <option value="Brand Identity System">Brand Identity System</option>
+                  <option value="Website Design">Website Design</option>
+                  <option value="App Development">App Development</option>
+                  <option value="Domain & Hosting">Domain & Hosting</option>
+                  <option value="Digital Marketing">Digital Marketing</option>
+                  <option value="Document Printing">Document Printing (B&W / Color)</option>
+                  <option value="High-Quality Photocopying">High-Quality Photocopying</option>
+                  <option value="Protective Lamination">Protective Lamination</option>
+                  <option value="Professional Spiral Binding">Professional Spiral Binding</option>
+                  <option value="Photo Printing">Photo Printing (All Sizes)</option>
                 </select>
                 <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               </div>
@@ -855,7 +850,7 @@ export default function Home() {
               <input
                 type="number"
                 {...register('quantity', { valueAsNumber: true })}
-                placeholder="100"
+                placeholder="1"
                 className="bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold transition-colors font-mono"
               />
               {errors.quantity && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.quantity.message}</p>}
@@ -886,10 +881,12 @@ export default function Home() {
                 className="w-full bg-zinc-950 border border-zinc-900 rounded p-3 text-xs text-white focus:outline-none focus:border-gold appearance-none font-mono"
               >
                 <option value="">-- Choose Finish Option --</option>
-                <option value="Matte Laminate Finish">Matte Laminate Finish</option>
-                <option value="Soft-Touch Satin Finish">Soft-Touch Satin Finish</option>
-                <option value="Spot UV Highlights">Spot UV Highlights</option>
-                <option value="Gold Foil Stamping">Gold Foil Stamping</option>
+                <option value="Glossy Lamination Finish">Glossy Lamination Finish</option>
+                <option value="Matte Lamination Finish">Matte Lamination Finish</option>
+                <option value="Glossy Photo Paper Finish">Glossy Photo Paper Finish</option>
+                <option value="Matte Photo Paper Finish">Matte Photo Paper Finish</option>
+                <option value="Standard Document Bond Paper">Standard Document Bond Paper</option>
+                <option value="Colored Stock Paper">Colored Stock Paper</option>
                 <option value="Not Applicable (Digital)">Not Applicable (Digital)</option>
               </select>
               {errors.finishOption && <p className="text-[10px] text-red-500 font-mono mt-0.5">{errors.finishOption.message}</p>}
@@ -900,7 +897,7 @@ export default function Home() {
                 <Upload className="w-3.5 h-3.5 text-gold" /> Upload Layout Artwork
               </label>
               <div className="border border-dashed border-zinc-800 rounded bg-zinc-950 p-6 text-center cursor-pointer hover:border-gold/50 transition-colors">
-                <span className="text-[11px] text-zinc-500 block font-mono">DRAG & DROP VECTOR FILE (.AI, .PDF, .EPS) OR CLICK TO BROWSE</span>
+                <span className="text-[11px] text-zinc-500 block font-mono">DRAG & DROP PRINT FILE (.PDF, .DOCX, .JPG, .PNG) OR CLICK TO BROWSE</span>
               </div>
             </div>
 
@@ -974,20 +971,20 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           <div className="lg:col-span-7 flex flex-col items-start">
             <span className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Studio Mandate</span>
-            <h3 className="text-3xl md:text-5xl font-black text-white mb-6">Cinematic Delivery & Bulk Packaging</h3>
+            <h3 className="text-3xl md:text-5xl font-black text-white mb-6">Large Scale Printing Experts</h3>
             <p className="text-zinc-400 mb-6 leading-relaxed text-sm font-sans">
-              Founded in 2026, Paravion Studios represents a unique combination of pixel-perfect digital software engineering and industrial packaging printing capability. We believe visual consistency across web interfaces and physical packaging materials is paramount for modern brands.
+              Paravion Technologies represents a unique combination of modern digital engineering and large-scale document printing, photocopy, and bind services. We focus on providing high-quality output at affordable prices, delivering clean, professional, and reliable work for student projects, corporate reports, and personal assignments.
             </p>
             <p className="text-zinc-500 text-xs leading-relaxed font-sans">
-              Headquartered in New Delhi, India, our print warehouse handles large-scale runs using advanced offset machinery, while our digital lab crafts bespoke front-ends and cloud pipelines.
+              Headquartered in New Delhi, India, our retail print shop handles single-page runs to bulk spiral binding and glossy lamination layouts, while our engineering team crafts bespoke websites and mobile applications.
             </p>
           </div>
 
           <div className="lg:col-span-5 flex flex-col gap-6 w-full">
             {[
-              { icon: BrainCircuit, color: "text-teal", title: "Web Architecture Labs", desc: "Engineered web structures utilizing React, Node, and Tailwind frameworks." },
-              { icon: Shield, color: "text-blue-500", title: "Industrial Print Warehouse", desc: "High-volume packaging box prints, custom tapes, and merchandise catalogs." },
-              { icon: LinkIcon, color: "text-gold", title: "Smart Paper Solutions", desc: "NFC smart cards, RFID tag overlays, and security holographic labels." }
+              { icon: BrainCircuit, color: "text-teal", title: "Digital Innovations", desc: "Developing responsive websites, mobile apps, domain setup, and hosting infrastructure." },
+              { icon: Printer, color: "text-blue-500", title: "Document & Photocopy Shop", desc: "Fast black & white and color photocopying for all document sizes (A4, A3, A5)." },
+              { icon: Shield, color: "text-gold", title: "Lamination & Spiral Binding", desc: "Glossy/matte protective sheets and durable binding configurations for reports and projects." }
             ].map((p) => (
               <div
                 key={p.title}
@@ -1015,7 +1012,7 @@ export default function Home() {
             <span className="text-xs font-mono text-gold tracking-[0.25em] uppercase mb-4">Direct Connection</span>
             <h3 className="text-3xl md:text-5xl font-black text-white mb-6">Contact Us</h3>
             <p className="text-zinc-400 leading-relaxed text-sm mb-8">
-              Discuss bulk orders, schedule paper finish sampling, or request developer evaluations for custom software systems.
+              Discuss document print orders, spiral binding requests, lamination requirements, or custom website/app engineering projects.
             </p>
 
             <div className="flex flex-col gap-5 text-sm font-mono text-zinc-400">
@@ -1067,19 +1064,19 @@ export default function Home() {
                 <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="url(#navHexGrad)" />
               </svg>
               <span className="text-white font-extrabold tracking-wider font-sans text-lg">
-                PARAVION STUDIOS
+                PARAVION TECHNOLOGIES
               </span>
             </div>
             <p className="text-xs text-zinc-500 leading-relaxed font-sans max-w-xs">
-              Think Big. Build Secure. Grow Digital. Dedicated to integrated digital design systems and high-volume industrial printing.
+              Think Big. Build Secure. Grow Digital. Dedicated to responsive digital systems and high-quality document printing, photocopy, binding, and lamination services.
             </p>
           </div>
 
           <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold mb-1">NAVIGATION</span>
-            <button onClick={() => handleNavClick('digital-section')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Digital Division</button>
-            <button onClick={() => handleNavClick('print-section')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Printing Division</button>
-            <button onClick={() => handleNavClick('about')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">About Studio</button>
+            <button onClick={() => handleNavClick('digital-section')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Digital Services</button>
+            <button onClick={() => handleNavClick('print-section')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Printing Shop</button>
+            <button onClick={() => handleNavClick('about')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">About Us</button>
             <button onClick={() => handleNavClick('contact')} className="text-sm text-zinc-500 hover:text-white transition-colors cursor-pointer">Contact</button>
           </div>
 
@@ -1093,14 +1090,14 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-6 border-t border-zinc-900 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-zinc-650 font-sans">
-            © 2026 Paravion Technologies / Studios. All Rights Reserved.
+            © 2026 Paravion Technologies. All Rights Reserved.
           </p>
           <div className="flex items-center gap-4 text-xs font-mono text-zinc-600">
-            <span>Integrated Studio Model</span>
+            <span>Digital & Print Shop Model</span>
             <span>·</span>
             <span className="flex items-center gap-1.5">
               <Eye className="w-3.5 h-3.5 text-teal" />
-              Sovereign Production Pipeline
+              Large Scale Production
             </span>
           </div>
         </div>
