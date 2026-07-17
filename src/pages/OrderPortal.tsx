@@ -227,7 +227,45 @@ export default function OrderPortal() {
   const onSubmitQuote = (data: PrintQuoteFormInputs) => {
     console.log("Order checkout confirmed:", data);
     const invoice = calculatePricing();
-    toast(`Order Placed! Subtotal: ₹${invoice.subtotal}. Final delivery fee will be confirmed based on distance. Order ID: PRV-${Math.floor(Math.random() * 900000 + 100000)}`, "success");
+    const orderId = `PRV-${Math.floor(Math.random() * 900000 + 100000)}`;
+
+    const invoiceMsg = `📥 NEW ORDER RECEIVED [${orderId}]
+----------------------------------
+👤 CLIENT DETAILS:
+- Name: ${data.name}
+- Phone: ${data.phone}
+- Email: ${data.email}
+
+🛠️ ORDER DETAILS:
+- Service: ${data.productType}
+- Option: ${data.productOption}
+- Quantity: ${data.quantity} ${data.productType === "Professional Spiral Binding" ? "books" : "units"}
+- Pages: ${["Document Printing", "High-Quality Photocopying", "Professional Spiral Binding"].includes(data.productType) ? data.pageCount : "N/A"}
+- Finish: ${data.finishOption}
+- Deadline: ${data.deadline}
+
+🚚 DELIVERY INFO:
+- Method: ${data.deliveryMethod}
+- Address: ${data.deliveryMethod === "Home Delivery" ? data.shippingAddress : "Self-Pickup"}
+- Delivery Cost: ${data.deliveryMethod === "Home Delivery" ? "₹40 (Base Charge)" : "₹0"}
+
+💰 ESTIMATED BILL:
+- Subtotal: ₹${invoice.subtotal}
+- Delivery Fee: ₹${invoice.deliveryFee}
+- Estimated Total: ₹${invoice.total}
+----------------------------------
+* Note: Final delivery charges will be confirmed separately based on location/distance. Please attach your document files to this thread.`;
+
+    // 1. Redirect to WhatsApp chat with pre-filled message text
+    const waUrl = `https://wa.me/917011991268?text=${encodeURIComponent(invoiceMsg)}`;
+    window.open(waUrl, '_blank');
+
+    // 2. Redirect to Email mailto compose window (delayed to prevent browser popup block overlap)
+    setTimeout(() => {
+      window.location.href = `mailto:paraviontechnologies@gmail.com?subject=New Order - ${orderId}&body=${encodeURIComponent(invoiceMsg)}`;
+    }, 450);
+
+    toast(`Order recorded! Estimated Total: ₹${invoice.total}. Connecting to WhatsApp & Email...`, "success");
     reset();
   };
 
